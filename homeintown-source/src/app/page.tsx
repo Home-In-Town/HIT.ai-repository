@@ -313,7 +313,7 @@ export default function HomePage() {
     if (!mapInstance.current || !detailProperty) return;
     const map = mapInstance.current;
     const currentType = (map as unknown as { getMapTypeId: () => string }).getMapTypeId();
-    (map as unknown as { setMapTypeId: (t: string) => void }).setMapTypeId(currentType === "satellite" ? "roadmap" : "satellite");
+    (map as unknown as { setMapTypeId: (t: string) => void }).setMapTypeId(currentType === "hybrid" ? "roadmap" : "hybrid");
     map.panTo({ lat: detailProperty.lat, lng: detailProperty.lng });
     map.setZoom(18);
     setDetailProperty(null);
