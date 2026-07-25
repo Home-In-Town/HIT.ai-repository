@@ -28,7 +28,7 @@ export default function StreetViewOverlay({
       </div>
       <div className="flex-1">
         <iframe
-          src={`https://www.google.com/maps/embed/v1/streetview?key=${apiKey}&location=${coords.lat},${coords.lng}&heading=210&pitch=10&fov=90`}
+          src={`https://www.google.com/maps/embed/v1/view?key=${apiKey}&center=${coords.lat},${coords.lng}&zoom=18&maptype=satellite`}
           className="w-full h-full border-0"
           allowFullScreen
           loading="lazy"
