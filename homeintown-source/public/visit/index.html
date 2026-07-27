@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>HomeInTown - Loading Property...</title>
+  <script>
+    // Extract slug from URL path: /visit/kukreja → kukreja
+    var path = window.location.pathname;
+    var slug = path.replace('/visit/', '').replace('/visit', '').replace(/\/$/, '');
+    if (slug) {
+      window.location.replace('/view-property-details?slug=' + slug);
+    } else {
+      window.location.replace('/');
+    }
+  </script>
+</head>
+<body>
+  <p>Redirecting...</p>
+</body>
+</html>
