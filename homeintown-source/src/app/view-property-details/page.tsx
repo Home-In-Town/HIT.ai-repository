@@ -3,188 +3,412 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
-import Navbar from "@/components/Navbar";
 import { apiRequest } from "@/lib/api";
 
-interface PropertyDetail {
+interface ProjectData {
   id: string;
   projectName: string;
-  location: string;
-  city: string;
-  builderName: string;
   projectType: string;
+  category?: string;
+  propertyType?: string;
+  builderName: string;
+  owner?: { name: string; phone: string };
+  city: string;
+  location: string;
+  latitude: number;
+  longitude: number;
+  googleMapLink: string;
+  reraApproved: boolean;
+  reraNumber: string;
   projectStatus: string;
   pricing: {
     startingPrice: number;
     pricePerSqFt: number;
+    totalPriceRange: string;
+    paymentPlan: string;
+    bankLoanAvailable: boolean;
   };
   configuration: {
     bhkOptions: string[];
     carpetAreaRange: string;
+    floorRange: string;
+    plotSizeRange: string;
+    facingOptions: string[];
+    gatedCommunity: boolean;
   };
   amenities: string[];
   media: {
     coverImage?: { url: string };
     galleryImages?: { url: string }[];
+    videos?: { url: string }[];
+    brochurePdf?: { url: string };
+    layoutImage?: { url: string };
   };
   cta: {
+    buttonText: string;
     whatsappNumber: string;
     callNumber: string;
-    buttonText: string;
   };
+  slug: string;
 }
 
-function PropertyDetailsContent() {
+function formatPrice(value: number): string {
+  if (!value) return "";
+  if (value >= 10000000) return `${(value / 10000000).toFixed(1).replace(/\.0$/, "")} Cr`;
+  if (value >= 100000) return `${(value / 100000).toFixed(0)} Lac`;
+  return value.toLocaleString("en-IN");
+}
+
+function formatStatus(status: string): string {
+  return status.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function PropertyContent() {
   const searchParams = useSearchParams();
   const slug = searchParams.get("slug");
-  const [property, setProperty] = useState<PropertyDetail | null>(null);
+  const [project, setProject] = useState<ProjectData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [activeImage, setActiveImage] = useState(0);
+  const [showEnquiry, setShowEnquiry] = useState(false);
 
   useEffect(() => {
-    if (slug) fetchProperty();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!slug) return;
+    const fetchProject = async () => {
+      try {
+        const data = await apiRequest<ProjectData>(`public/projects/${slug}`);
+        setProject(data);
+      } catch (err) {
+        console.error(err);
+        setError("Property not found");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProject();
   }, [slug]);
-
-  const fetchProperty = async () => {
-    try {
-      const data = await apiRequest<PropertyDetail>(`public/projects/${slug}`);
-      setProperty(data);
-    } catch (err) {
-      setError("Property not found");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600 mx-auto" />
+          <p className="text-sm text-gray-500 mt-3">Loading property...</p>
+        </div>
       </div>
     );
   }
 
-  if (error || !property) {
+  if (error || !project) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500">{error || "Property not found."}</p>
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="text-center">
+          <p className="text-5xl mb-4">🏠</p>
+          <h1 className="text-xl font-bold text-gray-800">Property Not Found</h1>
+          <p className="text-sm text-gray-500 mt-2">The property you&apos;re looking for doesn&apos;t exist.</p>
+          <a href="/" className="inline-block mt-4 px-4 py-2 bg-green-700 text-white rounded-lg text-sm hover:bg-green-800">
+            Go to Map
+          </a>
+        </div>
       </div>
     );
   }
 
-  const coverUrl = property.media?.coverImage?.url || "/property.jpg";
+  // Build all images array
+  const allImages: string[] = [];
+  if (project.media?.coverImage?.url) allImages.push(project.media.coverImage.url);
+  if (project.media?.galleryImages) {
+    project.media.galleryImages.forEach((img) => { if (img.url) allImages.push(img.url); });
+  }
+  if (allImages.length === 0) allImages.push("/property.jpg");
+
+  const isPlot = project.projectType === "plot" || project.propertyType?.toLowerCase().includes("plot");
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      {/* Cover Image */}
-      <div className="relative h-[350px] w-full rounded-xl overflow-hidden mb-6">
-        <Image
-          src={coverUrl}
-          alt={property.projectName}
-          fill
-          className="object-cover"
-        />
-        <span className="absolute top-4 right-4 bg-green-100 text-green-800 text-xs font-semibold px-3 py-1 rounded">
-          {property.projectStatus}
-        </span>
+    <div className="min-h-screen bg-white">
+      {/* ─── Top CTA Bar ─── */}
+      <div className="sticky top-0 z-20 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
+        <a href="/" className="flex items-center gap-2">
+          <Image src="/new_logo.png" alt="HomeInTown" width={80} height={32} className="h-[28px] w-auto" />
+        </a>
+        <div className="flex gap-2">
+          {project.cta?.callNumber && (
+            <a href={`tel:${project.cta.callNumber}`} className="px-4 py-2 bg-green-700 text-white text-xs font-medium rounded-full hover:bg-green-800 transition">
+              📞 Call
+            </a>
+          )}
+          {project.cta?.whatsappNumber && (
+            <a href={`https://wa.me/91${project.cta.whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="px-4 py-2 border border-green-700 text-green-700 text-xs font-medium rounded-full hover:bg-green-50 transition">
+              WhatsApp
+            </a>
+          )}
+          <button onClick={() => setShowEnquiry(true)} className="px-4 py-2 border border-gray-300 text-gray-700 text-xs font-medium rounded-full hover:bg-gray-50 transition">
+            ✏️ Enquire Now
+          </button>
+        </div>
       </div>
 
-      {/* Info */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold text-gray-900">{property.projectName}</h1>
-        <p className="text-gray-600 mt-1">
-          {property.location}, {property.city}
-        </p>
-        <p className="text-sm text-gray-500 mt-1">
-          Builder: <span className="font-medium">{property.builderName}</span>
-        </p>
-
-        {/* Pricing */}
-        <div className="grid grid-cols-2 gap-4 mt-6">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-500">Starting Price</p>
-            <p className="text-xl font-bold text-green-700">
-              ₹{property.pricing.startingPrice.toLocaleString("en-IN")}
-            </p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-500">Price per Sq. Ft.</p>
-            <p className="text-xl font-bold text-gray-800">
-              ₹{property.pricing.pricePerSqFt.toLocaleString("en-IN")}
-            </p>
-          </div>
-        </div>
-
-        {/* Configuration */}
-        {property.configuration.bhkOptions.length > 0 && (
-          <div className="mt-6">
-            <h3 className="font-semibold text-gray-800">Configuration</h3>
-            <div className="flex gap-2 mt-2 flex-wrap">
-              {property.configuration.bhkOptions.map((bhk) => (
-                <span
-                  key={bhk}
-                  className="px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-full border border-blue-200"
-                >
-                  {bhk}
-                </span>
-              ))}
-            </div>
-            {property.configuration.carpetAreaRange && (
-              <p className="text-sm text-gray-500 mt-2">
-                Area: {property.configuration.carpetAreaRange}
-              </p>
+      {/* ─── Main Content ─── */}
+      <div className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* ─── LEFT COLUMN ─── */}
+        <div>
+          {/* Status Badges */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {project.projectStatus && (
+              <span className="px-3 py-1 text-[11px] font-medium bg-green-700 text-white rounded-full">
+                {formatStatus(project.projectStatus)}
+              </span>
+            )}
+            {project.category && (
+              <span className="px-3 py-1 text-[11px] font-medium bg-amber-700 text-white rounded-full">
+                {project.category}
+              </span>
+            )}
+            {project.propertyType && (
+              <span className="px-3 py-1 text-[11px] font-medium bg-gray-600 text-white rounded-full">
+                {project.propertyType}
+              </span>
             )}
           </div>
-        )}
 
-        {/* Amenities */}
-        {property.amenities.length > 0 && (
-          <div className="mt-6">
-            <h3 className="font-semibold text-gray-800">Amenities</h3>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {property.amenities.map((a, i) => (
-                <span
-                  key={i}
-                  className="px-3 py-1 bg-amber-50 text-gray-700 text-sm rounded-full border border-amber-200"
+          {/* Name */}
+          <h1 className="text-3xl font-semibold text-gray-800">{project.projectName}</h1>
+          
+          {/* Builder */}
+          {(project.builderName || project.owner?.name) && (
+            <p className="text-sm text-gray-600 mt-1">
+              By <span className="font-medium">{project.builderName || project.owner?.name}</span>
+            </p>
+          )}
+
+          {/* Location */}
+          <p className="flex items-center gap-1 text-gray-500 text-sm mt-2">
+            📍 {project.location}{project.city ? `, ${project.city}` : ""}
+          </p>
+
+          {/* Price */}
+          {(project.pricing?.startingPrice || project.pricing?.pricePerSqFt) && (
+            <div className="mt-4 mb-6">
+              <p className="text-xs text-green-700">Starting at</p>
+              <p className="text-3xl font-semibold text-gray-900">
+                ₹{formatPrice(project.pricing.startingPrice)}
+                {project.pricing.pricePerSqFt > 0 && (
+                  <span className="ml-2 text-base font-normal text-gray-500">
+                    @ ₹{project.pricing.pricePerSqFt.toLocaleString("en-IN")} / sq.ft.
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
+
+          {/* Image Carousel */}
+          <div className="relative rounded-xl overflow-hidden mb-4">
+            <div className="relative h-[280px] md:h-[350px]">
+              <Image
+                src={allImages[activeImage]}
+                alt={project.projectName}
+                fill
+                className="object-cover"
+              />
+            </div>
+            {allImages.length > 1 && (
+              <>
+                <button
+                  onClick={() => setActiveImage((prev) => (prev - 1 + allImages.length) % allImages.length)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center shadow hover:bg-white"
                 >
-                  {a}
-                </span>
-              ))}
+                  ‹
+                </button>
+                <button
+                  onClick={() => setActiveImage((prev) => (prev + 1) % allImages.length)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center shadow hover:bg-white"
+                >
+                  ›
+                </button>
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {allImages.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveImage(i)}
+                      className={`w-2 h-2 rounded-full transition ${i === activeImage ? "bg-white" : "bg-white/50"}`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Flat / Plot Details */}
+          <div className="bg-gray-50 rounded-xl p-5 mb-4">
+            <h3 className="text-base font-bold text-gray-800 mb-3">
+              {isPlot ? "Plot Details" : "Flat Details"}
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              {!isPlot && project.configuration?.bhkOptions?.length > 0 && (
+                <div>
+                  <p className="text-[11px] text-gray-400">BHK Options</p>
+                  <p className="text-sm font-medium">{project.configuration.bhkOptions.join(", ")}</p>
+                </div>
+              )}
+              {!isPlot && project.configuration?.carpetAreaRange && (
+                <div>
+                  <p className="text-[11px] text-gray-400">Carpet Area</p>
+                  <p className="text-sm font-medium">{project.configuration.carpetAreaRange}</p>
+                </div>
+              )}
+              {!isPlot && project.configuration?.floorRange && (
+                <div>
+                  <p className="text-[11px] text-gray-400">Floors</p>
+                  <p className="text-sm font-medium">{project.configuration.floorRange}</p>
+                </div>
+              )}
+              {isPlot && project.configuration?.plotSizeRange && (
+                <div>
+                  <p className="text-[11px] text-gray-400">Plot Size</p>
+                  <p className="text-sm font-medium">{project.configuration.plotSizeRange}</p>
+                </div>
+              )}
+              {project.configuration?.facingOptions?.length > 0 && (
+                <div>
+                  <p className="text-[11px] text-gray-400">Facing</p>
+                  <p className="text-sm font-medium">{project.configuration.facingOptions.join(", ")}</p>
+                </div>
+              )}
+              {project.configuration?.gatedCommunity && (
+                <div>
+                  <p className="text-[11px] text-gray-400">Gated Community</p>
+                  <p className="text-sm font-medium text-green-600">Yes ✓</p>
+                </div>
+              )}
+              {project.pricing?.bankLoanAvailable && (
+                <div>
+                  <p className="text-[11px] text-gray-400">Bank Loan</p>
+                  <p className="text-sm font-medium text-green-600">Available ✓</p>
+                </div>
+              )}
+              {project.reraApproved && (
+                <div>
+                  <p className="text-[11px] text-gray-400">RERA</p>
+                  <p className="text-sm font-medium">{project.reraNumber || "Approved"}</p>
+                </div>
+              )}
             </div>
           </div>
-        )}
 
-        {/* CTA */}
-        <div className="flex gap-3 mt-8">
-          <a
-            href={`https://wa.me/${property.cta.whatsappNumber}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-5 py-3 bg-green-500 text-white rounded-full text-sm font-medium hover:bg-green-600 transition"
-          >
-            💬 WhatsApp
-          </a>
-          <a
-            href={`tel:${property.cta.callNumber}`}
-            className="flex items-center gap-2 px-5 py-3 bg-blue-500 text-white rounded-full text-sm font-medium hover:bg-blue-600 transition"
-          >
-            📞 Call
-          </a>
+          {/* Amenities */}
+          {project.amenities?.length > 0 && (
+            <div className="mb-4">
+              <h3 className="text-base font-bold text-gray-800 mb-3">Amenities</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {project.amenities.map((a, i) => (
+                  <div key={`am-${i}`} className="flex items-center gap-2 text-sm text-gray-600 py-1">
+                    <span className="w-6 h-6 bg-green-50 rounded flex items-center justify-center text-green-600 text-xs">✓</span>
+                    {a}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Brochure */}
+          {project.media?.brochurePdf?.url && (
+            <a
+              href={project.media.brochurePdf.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-3 border border-green-200 text-green-700 rounded-xl text-sm font-medium hover:bg-green-50 transition mb-4"
+            >
+              📄 Download Brochure
+            </a>
+          )}
+
+          {/* Video */}
+          {project.media?.videos && project.media.videos.length > 0 && (
+            <div className="mb-4">
+              <h3 className="text-base font-bold text-gray-800 mb-3">Video Tour</h3>
+              <video controls className="w-full rounded-xl" poster={allImages[0]}>
+                <source src={project.media.videos[0].url} type="video/mp4" />
+              </video>
+            </div>
+          )}
+        </div>
+
+        {/* ─── RIGHT COLUMN (Map + Actions) ─── */}
+        <div className="sticky top-20 h-fit">
+          {/* Map Action Buttons */}
+          <div className="flex gap-2 mb-3 flex-wrap">
+            {project.googleMapLink && (
+              <a href={project.googleMapLink} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-green-700 text-white text-xs rounded-full">
+                📍 Directions
+              </a>
+            )}
+            <a href={`/?lat=${project.latitude}&lng=${project.longitude}`} className="px-3 py-1.5 bg-gray-700 text-white text-xs rounded-full">
+              🗺️ Map
+            </a>
+            <button className="px-3 py-1.5 bg-gray-700 text-white text-xs rounded-full">
+              🛰️ Satellite
+            </button>
+            <button className="px-3 py-1.5 bg-gray-700 text-white text-xs rounded-full">
+              🏠 3D View
+            </button>
+            <button className="px-3 py-1.5 bg-gray-700 text-white text-xs rounded-full">
+              👁️ Virtual View
+            </button>
+          </div>
+
+          {/* Embedded Map */}
+          {project.latitude !== 0 && project.longitude !== 0 ? (
+            <div className="rounded-xl overflow-hidden h-[400px] border border-gray-200">
+              <iframe
+                src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${project.latitude},${project.longitude}&zoom=15&maptype=roadmap`}
+                className="w-full h-full border-0"
+                allowFullScreen
+                loading="lazy"
+              />
+            </div>
+          ) : (
+            <div className="rounded-xl h-[400px] border border-gray-200 bg-gray-100 flex items-center justify-center">
+              <p className="text-gray-400 text-sm">Map not available (coordinates missing)</p>
+            </div>
+          )}
+
+          {/* CTA below map */}
+          <div className="flex gap-2 mt-4">
+            {project.cta?.callNumber && (
+              <a href={`tel:${project.cta.callNumber}`} className="flex-1 text-center py-3 bg-green-700 text-white text-sm font-medium rounded-full hover:bg-green-800">
+                📞 Call
+              </a>
+            )}
+            {project.cta?.whatsappNumber && (
+              <a href={`https://wa.me/91${project.cta.whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-center py-3 border border-green-700 text-green-700 text-sm font-medium rounded-full hover:bg-green-50">
+                💬 WhatsApp
+              </a>
+            )}
+            <button onClick={() => setShowEnquiry(true)} className="flex-1 text-center py-3 bg-red-500 text-white text-sm font-medium rounded-full hover:bg-red-600">
+              {project.cta?.buttonText || "Book Site Visit"}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Gallery */}
-      {property.media?.galleryImages && property.media.galleryImages.length > 0 && (
-        <div className="mt-8">
-          <h3 className="font-semibold text-gray-800 mb-3">Gallery</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {property.media.galleryImages.map((img, i) => (
-              <div key={i} className="relative h-[150px] rounded-lg overflow-hidden">
-                <Image src={img.url} alt={`Gallery ${i + 1}`} fill className="object-cover" />
-              </div>
-            ))}
+      {/* ─── Enquiry Modal ─── */}
+      {showEnquiry && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold">Enquire Now</h3>
+              <button onClick={() => setShowEnquiry(false)} className="text-gray-400 hover:text-gray-700 text-xl">✕</button>
+            </div>
+            <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); alert("Enquiry submitted! We will contact you soon."); setShowEnquiry(false); }}>
+              <input type="text" placeholder="Your Name" required className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-green-400" />
+              <input type="tel" placeholder="Phone Number" required className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-green-400" />
+              <input type="email" placeholder="Email (optional)" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-green-400" />
+              <textarea placeholder="Message (optional)" rows={3} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-green-400" />
+              <button type="submit" className="w-full py-3 bg-green-700 text-white rounded-lg font-medium hover:bg-green-800 transition">
+                Submit Enquiry
+              </button>
+            </form>
           </div>
         </div>
       )}
@@ -194,17 +418,12 @@ function PropertyDetailsContent() {
 
 export default function ViewPropertyDetailsPage() {
   return (
-    <div>
-      <Navbar />
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-          </div>
-        }
-      >
-        <PropertyDetailsContent />
-      </Suspense>
-    </div>
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600" />
+      </div>
+    }>
+      <PropertyContent />
+    </Suspense>
   );
 }
