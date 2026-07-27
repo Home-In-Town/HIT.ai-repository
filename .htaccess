@@ -5,6 +5,15 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 # /visit/slug → serve visit/index.html (client-side redirect to property detail)
 RewriteRule ^visit/(.+)$ /visit/index.html [L]
 
+# /view-property-details → serve view-property-details.html
+RewriteRule ^view-property-details$ /view-property-details.html [L]
+
+# Try .html extension for clean URLs
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.html -f
+RewriteRule ^(.*)$ $1.html [L]
+
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ /404.html [L]
