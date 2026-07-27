@@ -22,7 +22,7 @@ export default function DetailPanel({
     <div
       className={`fixed z-50 transition-transform duration-400 ease-out
         md:top-0 md:left-0 md:h-full md:w-[420px]
-        top-auto left-0 right-0 bottom-0 w-full h-[80vh] rounded-t-3xl md:rounded-none
+        top-auto left-0 right-0 bottom-0 w-full h-[85vh] rounded-t-3xl md:rounded-none
         ${property ? "translate-y-0 md:translate-x-0" : "translate-y-full md:-translate-x-full md:translate-y-0"}
       `}
     >
@@ -33,17 +33,115 @@ export default function DetailPanel({
             <div className="w-10 h-1 bg-gray-300 rounded-full" />
           </div>
 
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 z-10 bg-white/90 hover:bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center text-gray-600 text-sm shadow transition"
-            aria-label="Close"
-          >
-            ✕
-          </button>
+          {/* Header: Status + Share + Close */}
+          <div className="px-5 pt-4 pb-2 flex items-start justify-between">
+            <div>
+              <span className="text-xs font-semibold text-green-700 uppercase">
+                {property.projectStatus === "ready-to-move"
+                  ? "Ready to Move"
+                  : property.projectStatus === "pre-launch"
+                  ? "Pre-Launch"
+                  : "Under Construction"}
+              </span>
+              <h2 className="text-xl font-bold text-gray-900 mt-1">
+                {property.property_name}
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600">
+                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+              </button>
+              <button
+                onClick={onClose}
+                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 text-lg"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
 
-          {/* Property Image */}
-          <div className="relative h-[220px] w-full">
+          {/* Address */}
+          <div className="px-5 pb-3">
+            <p className="text-xs text-gray-500 flex items-start gap-1">
+              <span>📍</span>
+              <span>{property.location}, {property.city}</span>
+            </p>
+          </div>
+
+          {/* BHK Options */}
+          {property.bhkOptions && property.bhkOptions.length > 0 && (
+            <div className="px-5 pb-3">
+              <p className="text-sm text-gray-700 font-medium">
+                {property.bhkOptions.join(", ")}
+              </p>
+            </div>
+          )}
+
+          {/* Price & Area Row */}
+          <div className="px-5 pb-4 flex items-end justify-between">
+            <div>
+              <p className="text-[11px] text-gray-400">Price starting from</p>
+              <p className="text-2xl font-bold text-gray-900">
+                ₹ {property.startingPrice
+                  ? (property.startingPrice >= 10000000
+                    ? `${(property.startingPrice / 10000000).toFixed(1)} Cr`
+                    : `${(property.startingPrice / 100000).toFixed(0)} L`)
+                  : "N/A"}{" "}
+                <span className="text-sm font-normal text-gray-500">onwards</span>
+              </p>
+              {property.pricePerSqFt && property.pricePerSqFt > 0 && (
+                <p className="text-xs text-blue-600 mt-0.5">See price details &rsaquo;</p>
+              )}
+            </div>
+            {property.carpetAreaRange && (
+              <div className="text-right">
+                <p className="text-[11px] text-gray-400">Saleable area</p>
+                <p className="text-sm font-semibold text-gray-700">
+                  {property.carpetAreaRange}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons Row */}
+          <div className="px-5 pb-4 flex gap-2 overflow-x-auto">
+            <button
+              onClick={onDirections}
+              className="px-3 py-1.5 bg-gray-800 text-white text-xs rounded-full whitespace-nowrap"
+            >
+              Directions
+            </button>
+            <button
+              onClick={() => {
+                /* Switch to roadmap */
+              }}
+              className="px-3 py-1.5 bg-gray-800 text-white text-xs rounded-full whitespace-nowrap"
+            >
+              Geographic
+            </button>
+            <button
+              onClick={on3DView}
+              className="px-3 py-1.5 bg-gray-800 text-white text-xs rounded-full whitespace-nowrap"
+            >
+              Satellite
+            </button>
+            <button
+              onClick={on3DView}
+              className="px-3 py-1.5 bg-gray-800 text-white text-xs rounded-full whitespace-nowrap"
+            >
+              3D View
+            </button>
+            <button
+              onClick={onImmersiveView}
+              className="px-3 py-1.5 bg-gray-800 text-white text-xs rounded-full whitespace-nowrap"
+            >
+              Virtual View
+            </button>
+          </div>
+
+          {/* Cover Image */}
+          <div className="relative h-[200px] w-full">
             <Image
               src={property.image}
               alt={property.property_name}
@@ -52,110 +150,134 @@ export default function DetailPanel({
             />
           </div>
 
-          {/* Content */}
-          <div className="px-5 pt-5 pb-8">
-            <p className="text-sm text-gray-500">{property.description}</p>
-            <h2 className="text-xl font-bold text-gray-900 mt-1">
-              {property.property_name}
-            </h2>
-
-            <div className="mt-4">
-              <p className="text-xs text-gray-600 leading-relaxed">
-                {property.address}
-              </p>
-              <p className="text-xs mt-3">
-                <span className="font-bold text-gray-900">RERA</span>{" "}
-                <span className="text-gray-500">P52100012345 :</span>
-              </p>
+          {/* Gallery Images */}
+          {property.galleryImages && property.galleryImages.length > 0 && (
+            <div className="flex gap-1 overflow-x-auto px-0 mt-1">
+              {property.galleryImages.map((img, i) => (
+                <div key={`gallery-${i}`} className="relative w-[120px] h-[80px] shrink-0">
+                  <Image src={img} alt={`Gallery ${i + 1}`} fill className="object-cover" />
+                </div>
+              ))}
             </div>
+          )}
 
-            {/* Price & Rating */}
-            <div className="mt-4">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold text-green-700">
-                  {property.price_short}
-                </span>
-                <span className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-[10px] font-bold">
-                  i
-                </span>
+          {/* Call / WhatsApp / Book Site Visit */}
+          <div className="px-5 py-4 flex gap-2">
+            {property.cta?.callNumber && (
+              <a
+                href={`tel:${property.cta.callNumber}`}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 border border-gray-300 rounded-full text-xs font-medium text-gray-700 hover:bg-gray-50 transition"
+              >
+                📞 Call
+              </a>
+            )}
+            {property.cta?.whatsappNumber && (
+              <a
+                href={`https://wa.me/91${property.cta.whatsappNumber}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 border border-gray-300 rounded-full text-xs font-medium text-gray-700 hover:bg-gray-50 transition"
+              >
+                💬 WhatsApp
+              </a>
+            )}
+            <button className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-red-500 text-white rounded-full text-xs font-medium hover:bg-red-600 transition">
+              {property.cta?.buttonText || "Book Site Visit"}
+            </button>
+          </div>
+
+          {/* Top Facilities */}
+          {property.amenities.length > 0 && (
+            <div className="px-5 pb-4">
+              <h3 className="text-sm font-bold text-gray-900 mb-3">Top Facilities</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {property.amenities.map((a, i) => (
+                  <div
+                    key={`amenity-${i}`}
+                    className="flex items-center gap-2 text-xs text-gray-600"
+                  >
+                    <span className="text-blue-500">🏢</span>
+                    {a}
+                  </div>
+                ))}
               </div>
-              {property.rating > 0 && (
-                <div className="flex items-center gap-1 mt-1">
-                  <span className="text-yellow-500 text-sm">★★★★½</span>
-                  <span className="text-xs text-gray-500">
-                    {property.rating} (0 reviews)
-                  </span>
+            </div>
+          )}
+
+          {/* Other Details */}
+          <div className="px-5 pb-4">
+            <h3 className="text-sm font-bold text-gray-900 mb-3">Other Details</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {property.carpetAreaRange && (
+                <div>
+                  <p className="text-[11px] text-gray-400">Carpet Area</p>
+                  <p className="text-xs font-medium text-gray-700">{property.carpetAreaRange}</p>
                 </div>
               )}
-            </div>
-
-            <hr className="my-5 border-gray-200" />
-
-            {/* Apartment Complex */}
-            <h3 className="font-semibold text-sm text-gray-500">
-              Apartment Complex
-            </h3>
-            <div className="flex gap-3 mt-3 overflow-x-auto pb-2">
-              <div className="min-w-[180px] border border-green-200 rounded-xl p-3 bg-green-50/60">
-                <p className="font-bold text-sm text-gray-900">
-                  3BHK{" "}
-                  <span className="font-normal text-gray-500 text-xs">
-                    Apartment (1200)
-                  </span>
-                </p>
-                <div className="flex items-center gap-3 mt-2 text-[11px] text-gray-600">
-                  <span>🛁 2 Bath</span>
-                  <span>🌿 2 Balcony</span>
+              {property.floorRange && (
+                <div>
+                  <p className="text-[11px] text-gray-400">Floors</p>
+                  <p className="text-xs font-medium text-gray-700">{property.floorRange}</p>
                 </div>
-                <p className="font-bold text-sm mt-2">
-                  ₹10200000{" "}
-                  <span className="text-[10px] font-normal text-green-600">
-                    + Charges
-                  </span>
-                </p>
-              </div>
-              <div className="min-w-[180px] border border-amber-200 rounded-xl p-3 bg-amber-50/60">
-                <p className="font-bold text-sm text-gray-900">
-                  2BHK{" "}
-                  <span className="font-normal text-gray-500 text-xs">
-                    Apartment (900)
-                  </span>
-                </p>
-                <div className="flex items-center gap-3 mt-2 text-[11px] text-gray-600">
-                  <span>🛁 2 Bath</span>
-                  <span>🌿 1 Balcony</span>
+              )}
+              {property.pricePerSqFt && property.pricePerSqFt > 0 && (
+                <div>
+                  <p className="text-[11px] text-gray-400">Price / sq.ft</p>
+                  <p className="text-xs font-medium text-gray-700">₹{property.pricePerSqFt.toLocaleString("en-IN")}</p>
                 </div>
-                <p className="font-bold text-sm mt-2">
-                  ₹7650000{" "}
-                  <span className="text-[10px] font-normal text-green-600">
-                    + Charges
-                  </span>
-                </p>
+              )}
+              {property.reraApproved && (
+                <div>
+                  <p className="text-[11px] text-gray-400">RERA</p>
+                  <p className="text-xs font-medium text-gray-700">{property.reraNumber || "Approved"}</p>
+                </div>
+              )}
+              {property.bankLoanAvailable && (
+                <div>
+                  <p className="text-[11px] text-gray-400">Bank Loan</p>
+                  <p className="text-xs font-medium text-green-600">Available ✓</p>
+                </div>
+              )}
+              {property.gatedCommunity && (
+                <div>
+                  <p className="text-[11px] text-gray-400">Gated Community</p>
+                  <p className="text-xs font-medium text-green-600">Yes ✓</p>
+                </div>
+              )}
+              {property.facingOptions && property.facingOptions.length > 0 && (
+                <div>
+                  <p className="text-[11px] text-gray-400">Facing</p>
+                  <p className="text-xs font-medium text-gray-700">{property.facingOptions.join(", ")}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-[11px] text-gray-400">Type</p>
+                <p className="text-xs font-medium text-gray-700 capitalize">{property.type}</p>
               </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-2 mt-5 flex-wrap">
-              <button
-                onClick={onDirections}
-                className="flex items-center gap-1.5 px-4 py-2.5 bg-green-500 rounded-full text-xs font-medium text-white hover:bg-green-600 transition"
-              >
-                <span>📍</span> Directions
-              </button>
-              <button
-                onClick={on3DView}
-                className="flex items-center gap-1.5 px-4 py-2.5 bg-blue-500 rounded-full text-xs font-medium text-white hover:bg-blue-600 transition"
-              >
-                <span>🏠</span> 3D View
-              </button>
-              <button
-                onClick={onImmersiveView}
-                className="flex items-center gap-1.5 px-4 py-2.5 bg-purple-500 rounded-full text-xs font-medium text-white hover:bg-purple-600 transition"
-              >
-                <span>👁️</span> Immersive View
-              </button>
             </div>
           </div>
+
+          {/* Builder Info */}
+          {property.builder && (
+            <div className="px-5 pb-4 border-t border-gray-100 pt-4">
+              <p className="text-[11px] text-gray-400">Builder / Developer</p>
+              <p className="text-sm font-medium text-gray-800">{property.builder}</p>
+            </div>
+          )}
+
+          {/* Brochure Download */}
+          {property.brochurePdf && (
+            <div className="px-5 pb-6">
+              <a
+                href={property.brochurePdf}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-2.5 border border-blue-200 text-blue-600 rounded-lg text-xs font-medium hover:bg-blue-50 transition"
+              >
+                📄 Download Brochure
+              </a>
+            </div>
+          )}
         </div>
       )}
     </div>

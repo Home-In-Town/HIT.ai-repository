@@ -19,8 +19,26 @@ export interface ProjectProperty {
   lat: number;
   lng: number;
   slug?: string;
-  cta?: { whatsappNumber?: string; callNumber?: string };
+  cta?: { whatsappNumber?: string; callNumber?: string; buttonText?: string };
   bhkOptions?: string[];
+  // Extended details
+  projectStatus?: string;
+  carpetAreaRange?: string;
+  floorRange?: string;
+  plotSizeRange?: string;
+  pricePerSqFt?: number;
+  startingPrice?: number;
+  bankLoanAvailable?: boolean;
+  reraApproved?: boolean;
+  reraNumber?: string;
+  gatedCommunity?: boolean;
+  facingOptions?: string[];
+  galleryImages?: string[];
+  videos?: string[];
+  brochurePdf?: string;
+  googleMapLink?: string;
+  city?: string;
+  location?: string;
 }
 
 export interface IncompleteProperty {
@@ -165,9 +183,27 @@ export function mapProject(
     lng,
     slug: p.slug as string,
     cta: cta
-      ? { whatsappNumber: cta.whatsappNumber, callNumber: cta.callNumber }
+      ? { whatsappNumber: cta.whatsappNumber, callNumber: cta.callNumber, buttonText: cta.buttonText }
       : undefined,
     bhkOptions: (config?.bhkOptions as string[]) || [],
+    // Extended details
+    projectStatus: (p.projectStatus as string) || "",
+    carpetAreaRange: (config?.carpetAreaRange as string) || "",
+    floorRange: (config?.floorRange as string) || "",
+    plotSizeRange: (config?.plotSizeRange as string) || "",
+    pricePerSqFt: Number(pricing?.pricePerSqFt) || 0,
+    startingPrice,
+    bankLoanAvailable: Boolean(pricing?.bankLoanAvailable),
+    reraApproved: Boolean(p.reraApproved),
+    reraNumber: (p.reraNumber as string) || "",
+    gatedCommunity: Boolean(config?.gatedCommunity),
+    facingOptions: (config?.facingOptions as string[]) || [],
+    galleryImages: ((media?.galleryImages as Array<Record<string, string>>) || []).map((g) => g.url).filter(Boolean),
+    videos: ((media?.videos as Array<Record<string, string>>) || []).map((v) => v.url).filter(Boolean),
+    brochurePdf: (media?.brochurePdf as Record<string, string>)?.url || "",
+    googleMapLink: (p.googleMapLink as string) || "",
+    city: (p.city as string) || "",
+    location: (p.location as string) || "",
   };
 }
 
