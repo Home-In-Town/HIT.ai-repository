@@ -71,6 +71,7 @@ function PropertyContent() {
   const [error, setError] = useState("");
   const [activeImage, setActiveImage] = useState(0);
   const [showEnquiry, setShowEnquiry] = useState(false);
+  const [mapView, setMapView] = useState<"roadmap" | "satellite" | "3d" | "streetview">("roadmap");
 
   useEffect(() => {
     if (!slug) return;
@@ -127,81 +128,158 @@ function PropertyContent() {
   return (
     <div className="min-h-screen bg-white">
       {/* ─── Top CTA Bar ─── */}
-      <div className="sticky top-0 z-20 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
-        <a href="/" className="flex items-center gap-2">
-          <Image src="/new_logo.png" alt="HomeInTown" width={80} height={32} className="h-[28px] w-auto" />
-        </a>
-        <div className="flex gap-2">
+      <div className="sticky top-0 z-20 bg-white border-b border-gray-100 px-3 py-2.5 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <button onClick={() => window.history.back()} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition" aria-label="Go back">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+          </button>
+          <a href="/" className="flex-shrink-0">
+            <Image src="/new_logo.png" alt="HomeInTown" width={80} height={32} className="h-[24px] md:h-[28px] w-auto" />
+          </a>
+        </div>
+        <div className="flex gap-1.5 md:gap-2 flex-shrink-0">
           {project.cta?.callNumber && (
-            <a href={`tel:${project.cta.callNumber}`} className="px-4 py-2 bg-green-700 text-white text-xs font-medium rounded-full hover:bg-green-800 transition">
+            <a href={`tel:${project.cta.callNumber}`} className="px-3 md:px-4 py-1.5 md:py-2 bg-green-700 text-white text-[11px] md:text-xs font-medium rounded-full hover:bg-green-800 transition">
               📞 Call
             </a>
           )}
           {project.cta?.whatsappNumber && (
-            <a href={`https://wa.me/91${project.cta.whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="px-4 py-2 border border-green-700 text-green-700 text-xs font-medium rounded-full hover:bg-green-50 transition">
+            <a href={`https://wa.me/91${project.cta.whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="px-3 md:px-4 py-1.5 md:py-2 border border-green-700 text-green-700 text-[11px] md:text-xs font-medium rounded-full hover:bg-green-50 transition">
               WhatsApp
             </a>
           )}
-          <button onClick={() => setShowEnquiry(true)} className="px-4 py-2 border border-gray-300 text-gray-700 text-xs font-medium rounded-full hover:bg-gray-50 transition">
-            ✏️ Enquire Now
+          <button onClick={() => setShowEnquiry(true)} className="px-3 md:px-4 py-1.5 md:py-2 border border-gray-300 text-gray-700 text-[11px] md:text-xs font-medium rounded-full hover:bg-gray-50 transition">
+            ✏️ Enquire
           </button>
         </div>
       </div>
 
       {/* ─── Main Content ─── */}
-      <div className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="max-w-6xl mx-auto px-4 py-6">
         
-        {/* ─── LEFT COLUMN ─── */}
-        <div>
-          {/* Status Badges */}
-          <div className="flex flex-wrap gap-2 mb-3">
-            {project.projectStatus && (
-              <span className="px-3 py-1 text-[11px] font-medium bg-green-700 text-white rounded-full">
-                {formatStatus(project.projectStatus)}
-              </span>
+        {/* ─── TOP: Info (left) + Map (right) ─── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {/* Left: Property Info */}
+          <div>
+            {/* Status Badges */}
+            <div className="flex flex-wrap gap-2 mb-3">
+              {project.projectStatus && (
+                <span className="px-3 py-1 text-[11px] font-medium bg-green-700 text-white rounded-full">
+                  {formatStatus(project.projectStatus)}
+                </span>
+              )}
+              {project.category && (
+                <span className="px-3 py-1 text-[11px] font-medium bg-amber-700 text-white rounded-full">
+                  {project.category}
+                </span>
+              )}
+              {project.propertyType && (
+                <span className="px-3 py-1 text-[11px] font-medium bg-gray-600 text-white rounded-full">
+                  {project.propertyType}
+                </span>
+              )}
+            </div>
+
+            {/* Name */}
+            <h1 className="text-3xl font-semibold text-gray-800">{project.projectName}</h1>
+            
+            {/* Builder */}
+            {(project.builderName || project.owner?.name) && (
+              <p className="text-sm text-gray-600 mt-1">
+                By <span className="font-medium">{project.builderName || project.owner?.name}</span>
+              </p>
             )}
-            {project.category && (
-              <span className="px-3 py-1 text-[11px] font-medium bg-amber-700 text-white rounded-full">
-                {project.category}
-              </span>
-            )}
-            {project.propertyType && (
-              <span className="px-3 py-1 text-[11px] font-medium bg-gray-600 text-white rounded-full">
-                {project.propertyType}
-              </span>
+
+            {/* Location */}
+            <p className="flex items-center gap-1 text-gray-500 text-sm mt-2">
+              📍 {project.location}{project.city ? `, ${project.city}` : ""}
+            </p>
+
+            {/* Price */}
+            {(project.pricing?.startingPrice || project.pricing?.pricePerSqFt) && (
+              <div className="mt-4">
+                <p className="text-xs text-green-700">Starting at</p>
+                <p className="text-3xl font-semibold text-gray-900">
+                  ₹{formatPrice(project.pricing.startingPrice)}
+                  {project.pricing.pricePerSqFt > 0 && (
+                    <span className="ml-2 text-base font-normal text-gray-500">
+                      @ ₹{project.pricing.pricePerSqFt.toLocaleString("en-IN")} / sq.ft.
+                    </span>
+                  )}
+                </p>
+              </div>
             )}
           </div>
 
-          {/* Name */}
-          <h1 className="text-3xl font-semibold text-gray-800">{project.projectName}</h1>
-          
-          {/* Builder */}
-          {(project.builderName || project.owner?.name) && (
-            <p className="text-sm text-gray-600 mt-1">
-              By <span className="font-medium">{project.builderName || project.owner?.name}</span>
-            </p>
-          )}
-
-          {/* Location */}
-          <p className="flex items-center gap-1 text-gray-500 text-sm mt-2">
-            📍 {project.location}{project.city ? `, ${project.city}` : ""}
-          </p>
-
-          {/* Price */}
-          {(project.pricing?.startingPrice || project.pricing?.pricePerSqFt) && (
-            <div className="mt-4 mb-6">
-              <p className="text-xs text-green-700">Starting at</p>
-              <p className="text-3xl font-semibold text-gray-900">
-                ₹{formatPrice(project.pricing.startingPrice)}
-                {project.pricing.pricePerSqFt > 0 && (
-                  <span className="ml-2 text-base font-normal text-gray-500">
-                    @ ₹{project.pricing.pricePerSqFt.toLocaleString("en-IN")} / sq.ft.
-                  </span>
-                )}
-              </p>
+          {/* Right: Map Section */}
+          <div>
+            {/* Map Action Buttons */}
+            <div className="flex gap-2 mb-3 flex-wrap">
+              {project.googleMapLink && (
+                <a href={`https://homeintown.ai/?lat=${project.latitude}&lng=${project.longitude}&directions=true`} className="px-3 py-1.5 bg-green-700 text-white text-xs rounded-full">
+                  📍 Directions
+                </a>
+              )}
+              <a href={`https://homeintown.ai/?lat=${project.latitude}&lng=${project.longitude}&only=true`} className={`px-3 py-1.5 text-xs rounded-full ${mapView === "roadmap" ? "bg-blue-600 text-white" : "bg-gray-700 text-white"}`}>
+                🗺️ Map
+              </a>
+              <button onClick={() => setMapView("satellite")} className={`px-3 py-1.5 text-xs rounded-full ${mapView === "satellite" ? "bg-blue-600 text-white" : "bg-gray-700 text-white"}`}>
+                🛰️ Satellite
+              </button>
+              <button onClick={() => setMapView("3d")} className={`px-3 py-1.5 text-xs rounded-full ${mapView === "3d" ? "bg-blue-600 text-white" : "bg-gray-700 text-white"}`}>
+                🏠 3D View
+              </button>
+              <button onClick={() => setMapView("streetview")} className={`px-3 py-1.5 text-xs rounded-full ${mapView === "streetview" ? "bg-blue-600 text-white" : "bg-gray-700 text-white"}`}>
+                👁️ Virtual View
+              </button>
             </div>
-          )}
 
+            {/* Embedded Map */}
+            {project.latitude !== 0 && project.longitude !== 0 ? (
+              <div className="rounded-xl overflow-hidden h-[300px] border border-gray-200">
+                {mapView === "streetview" ? (
+                  <iframe
+                    src={`https://www.google.com/maps/embed/v1/streetview?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&location=${project.latitude},${project.longitude}&heading=210&pitch=10&fov=90`}
+                    className="w-full h-full border-0"
+                    allowFullScreen
+                    loading="lazy"
+                  />
+                ) : (
+                  <iframe
+                    src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${project.latitude},${project.longitude}&zoom=${mapView === "3d" ? "18" : "15"}&maptype=${mapView === "satellite" || mapView === "3d" ? "satellite" : "roadmap"}`}
+                    className="w-full h-full border-0"
+                    allowFullScreen
+                    loading="lazy"
+                  />
+                )}
+              </div>
+            ) : (
+              <div className="rounded-xl h-[300px] border border-gray-200 bg-gray-100 flex items-center justify-center">
+                <p className="text-gray-400 text-sm">Map not available (coordinates missing)</p>
+              </div>
+            )}
+
+            {/* CTA below map */}
+            <div className="flex gap-2 mt-4">
+              {project.cta?.callNumber && (
+                <a href={`tel:${project.cta.callNumber}`} className="flex-1 text-center py-3 bg-green-700 text-white text-sm font-medium rounded-full hover:bg-green-800">
+                  📞 Call
+                </a>
+              )}
+              {project.cta?.whatsappNumber && (
+                <a href={`https://wa.me/91${project.cta.whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-center py-3 border border-green-700 text-green-700 text-sm font-medium rounded-full hover:bg-green-50">
+                  💬 WhatsApp
+                </a>
+              )}
+              <button onClick={() => setShowEnquiry(true)} className="flex-1 text-center py-3 bg-red-500 text-white text-sm font-medium rounded-full hover:bg-red-600">
+                {project.cta?.buttonText || "Book Site Visit"}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ─── BELOW: Full-width content ─── */}
+        <div>
           {/* Image Carousel */}
           <div className="relative rounded-xl overflow-hidden mb-4">
             <div className="relative h-[280px] md:h-[350px]">
@@ -332,63 +410,6 @@ function PropertyContent() {
               </video>
             </div>
           )}
-        </div>
-
-        {/* ─── RIGHT COLUMN (Map + Actions) ─── */}
-        <div className="sticky top-20 h-fit">
-          {/* Map Action Buttons */}
-          <div className="flex gap-2 mb-3 flex-wrap">
-            {project.googleMapLink && (
-              <a href={project.googleMapLink} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-green-700 text-white text-xs rounded-full">
-                📍 Directions
-              </a>
-            )}
-            <a href={`/?lat=${project.latitude}&lng=${project.longitude}`} className="px-3 py-1.5 bg-gray-700 text-white text-xs rounded-full">
-              🗺️ Map
-            </a>
-            <button className="px-3 py-1.5 bg-gray-700 text-white text-xs rounded-full">
-              🛰️ Satellite
-            </button>
-            <button className="px-3 py-1.5 bg-gray-700 text-white text-xs rounded-full">
-              🏠 3D View
-            </button>
-            <button className="px-3 py-1.5 bg-gray-700 text-white text-xs rounded-full">
-              👁️ Virtual View
-            </button>
-          </div>
-
-          {/* Embedded Map */}
-          {project.latitude !== 0 && project.longitude !== 0 ? (
-            <div className="rounded-xl overflow-hidden h-[400px] border border-gray-200">
-              <iframe
-                src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${project.latitude},${project.longitude}&zoom=15&maptype=roadmap`}
-                className="w-full h-full border-0"
-                allowFullScreen
-                loading="lazy"
-              />
-            </div>
-          ) : (
-            <div className="rounded-xl h-[400px] border border-gray-200 bg-gray-100 flex items-center justify-center">
-              <p className="text-gray-400 text-sm">Map not available (coordinates missing)</p>
-            </div>
-          )}
-
-          {/* CTA below map */}
-          <div className="flex gap-2 mt-4">
-            {project.cta?.callNumber && (
-              <a href={`tel:${project.cta.callNumber}`} className="flex-1 text-center py-3 bg-green-700 text-white text-sm font-medium rounded-full hover:bg-green-800">
-                📞 Call
-              </a>
-            )}
-            {project.cta?.whatsappNumber && (
-              <a href={`https://wa.me/91${project.cta.whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-center py-3 border border-green-700 text-green-700 text-sm font-medium rounded-full hover:bg-green-50">
-                💬 WhatsApp
-              </a>
-            )}
-            <button onClick={() => setShowEnquiry(true)} className="flex-1 text-center py-3 bg-red-500 text-white text-sm font-medium rounded-full hover:bg-red-600">
-              {project.cta?.buttonText || "Book Site Visit"}
-            </button>
-          </div>
         </div>
       </div>
 

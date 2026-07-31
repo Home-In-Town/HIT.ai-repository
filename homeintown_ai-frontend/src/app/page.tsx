@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { apiRequest } from "@/lib/api";
 import {
   ProjectProperty,
@@ -23,7 +24,7 @@ const CATEGORY_TABS = [
   { name: "Rent", icon: "💰" },
 ];
 
-export default function HomePage() {
+function HomePageContent() {
   // ─── Refs ───
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
@@ -42,6 +43,86 @@ export default function HomePage() {
   const [showDirections, setShowDirections] = useState(false);
   const [showIncomplete, setShowIncomplete] = useState(false);
   const [streetViewCoords, setStreetViewCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  // ─── URL Params (for directions from property details page) ───
+  const searchParams = useSearchParams();
+  const urlLat = searchParams.get("lat");
+  const urlLng = searchParams.get("lng");
+  const urlDirections = searchParams.get("directions");
+  const urlOnly = searchParams.get("only");
+
+  // ─── Show only single property marker when "only=true" ───
+  useEffect(() => {
+    if (!urlLat || !urlLng || urlOnly !== "true" || !mapReady || !mapInstance.current) return;
+
+    const lat = parseFloat(urlLat);
+    const lng = parseFloat(urlLng);
+    if (isNaN(lat) || isNaN(lng)) return;
+
+    const map = mapInstance.current;
+
+    // Clear all existing overlays
+    overlays.current.forEach((o) => (o as unknown as { remove: () => void }).remove());
+    overlays.current = [];
+
+    // Remove user location marker/circle
+    if (locationMarker.current) { locationMarker.current.setMap(null); locationMarker.current = null; }
+    if (locationCircle.current) { locationCircle.current.setMap(null); locationCircle.current = null; }
+
+    // Pan to property and place a single marker
+    map.panTo({ lat, lng });
+    map.setZoom(16);
+
+    new window.google.maps.Marker({
+      position: { lat, lng },
+      map,
+      title: "Property Location",
+    });
+  }, [urlLat, urlLng, urlOnly, mapReady]);
+
+  // ─── Auto-trigger directions when URL params are present ───
+  useEffect(() => {
+    if (!urlLat || !urlLng || urlDirections !== "true" || !mapReady || !mapInstance.current) return;
+
+    const destLat = parseFloat(urlLat);
+    const destLng = parseFloat(urlLng);
+    if (isNaN(destLat) || isNaN(destLng)) return;
+
+    const map = mapInstance.current;
+    map.panTo({ lat: destLat, lng: destLng });
+    map.setZoom(14);
+
+    // Get user location and show directions
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const origin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        if (directionsRenderer.current) directionsRenderer.current.setMap(null);
+
+        const svc = new (window.google.maps as unknown as Record<string, new () => { route: (req: unknown, cb: (r: unknown, s: string) => void) => void }>).DirectionsService();
+        const renderer = new (window.google.maps as unknown as Record<string, new (o: Record<string, unknown>) => { setMap: (m: google.maps.Map | null) => void; setDirections: (r: unknown) => void }>).DirectionsRenderer({
+          suppressMarkers: false, polylineOptions: { strokeColor: "#4285F4", strokeWeight: 5, strokeOpacity: 0.8 },
+        });
+        renderer.setMap(map);
+        directionsRenderer.current = renderer as unknown as google.maps.DirectionsRenderer;
+
+        svc.route(
+          { origin, destination: { lat: destLat, lng: destLng }, travelMode: "DRIVING" },
+          (result: unknown, status: string) => {
+            if (status === "OK") {
+              renderer.setDirections(result);
+            } else {
+              console.error("Directions failed:", status);
+            }
+          }
+        );
+      },
+      (err) => {
+        console.error("Geolocation error for directions:", err);
+        alert("Location access is needed to show directions. Please allow location access.");
+      },
+      { enableHighAccuracy: true }
+    );
+  }, [urlLat, urlLng, urlDirections, mapReady]);
 
   // ─── Fetch projects from backend ───
   useEffect(() => {
@@ -77,6 +158,7 @@ export default function HomePage() {
 
   // ─── Place markers when map + data ready ───
   useEffect(() => {
+    if (urlOnly === "true") return; // Skip when showing single property
     if (mapReady && mapInstance.current && properties.length > 0) {
       placePropertyMarkers(mapInstance.current, activeCategory, properties);
       const first = properties[0];
@@ -125,7 +207,10 @@ export default function HomePage() {
     });
     mapInstance.current = map;
     setMapReady(true);
-    getUserLocation();
+    // Skip user location when showing single property only
+    if (!(new URLSearchParams(window.location.search)).get("only")) {
+      getUserLocation();
+    }
   };
 
   // ─── Price pill overlay factory ───
@@ -384,5 +469,18 @@ export default function HomePage() {
         onClose={() => setStreetViewCoords(null)}
       />
     </div>
+  );
+}
+
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600" />
+      </div>
+    }>
+      <HomePageContent />
+    </Suspense>
   );
 }

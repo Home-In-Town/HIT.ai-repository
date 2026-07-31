@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "export",
+  // output: "export", // Uncomment for production static build
   images: {
     unoptimized: true,
     remotePatterns: [
