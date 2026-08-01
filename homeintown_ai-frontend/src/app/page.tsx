@@ -33,6 +33,7 @@ function HomePageContent() {
   const overlays = useRef<google.maps.OverlayView[]>([]);
   const directionsRenderer = useRef<google.maps.DirectionsRenderer | null>(null);
   const singleMarker = useRef<google.maps.Marker | null>(null);
+  const geoCircle = useRef<google.maps.Circle | null>(null);
 
   // ─── State ───
   const [searchQuery, setSearchQuery] = useState("");
@@ -516,6 +517,8 @@ function HomePageContent() {
           setDetailProperty(null);
           // Remove single marker pin
           if (singleMarker.current) { singleMarker.current.setMap(null); singleMarker.current = null; }
+          // Remove geographic circle
+          if (geoCircle.current) { geoCircle.current.setMap(null); geoCircle.current = null; }
           // Restore all property markers
           if (mapInstance.current && properties.length > 0) {
             placePropertyMarkers(mapInstance.current, activeCategory, properties);
@@ -542,7 +545,8 @@ function HomePageContent() {
             title: detailProperty.property_name,
           });
           // Draw red circle around property
-          new window.google.maps.Circle({
+          if (geoCircle.current) { geoCircle.current.setMap(null); geoCircle.current = null; }
+          geoCircle.current = new window.google.maps.Circle({
             map,
             center: { lat, lng },
             radius: 3500,
