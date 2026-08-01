@@ -61,7 +61,12 @@ export default function DirectionsPanel({
             {filtered.map((property) => (
               <div
                 key={`dir-${property.id}`}
-                className="flex items-center justify-between px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition"
+                className="flex items-center justify-between px-4 py-3 border-b border-gray-50 hover:bg-gray-50 active:bg-gray-100 transition cursor-pointer"
+                onClick={() => {
+                  if (property.slug) {
+                    window.location.href = `/view-property-details?slug=${property.slug}`;
+                  }
+                }}
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] font-semibold text-blue-600 uppercase">
@@ -78,7 +83,7 @@ export default function DirectionsPanel({
                   </p>
                 </div>
                 <button
-                  onClick={() => onNavigate(property)}
+                  onClick={(e) => { e.stopPropagation(); onNavigate(property); }}
                   className="ml-3 w-8 h-8 flex items-center justify-center bg-blue-50 hover:bg-blue-100 rounded-full transition shrink-0"
                   title={`Get directions to ${property.property_name}`}
                   aria-label="Get directions"
