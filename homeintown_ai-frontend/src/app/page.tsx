@@ -549,7 +549,7 @@ function HomePageContent() {
           geoCircle.current = new window.google.maps.Circle({
             map,
             center: { lat, lng },
-            radius: 3500,
+            radius: 2500,
             fillColor: "#16a34a",
             fillOpacity: 0.05,
             strokeColor: "#16a34a",
