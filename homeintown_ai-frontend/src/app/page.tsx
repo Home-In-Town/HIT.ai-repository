@@ -550,9 +550,9 @@ function HomePageContent() {
             map,
             center: { lat, lng },
             radius: 3500,
-            fillColor: "#dc2626",
+            fillColor: "#16a34a",
             fillOpacity: 0.05,
-            strokeColor: "#dc2626",
+            strokeColor: "#16a34a",
             strokeOpacity: 0.8,
             strokeWeight: 2,
           });
