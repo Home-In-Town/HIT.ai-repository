@@ -1,5 +1,8 @@
 RewriteEngine On
 
+# Redirect /visit/slug to /view-property-details.html?slug=slug
+RewriteRule ^visit/(.+)$ /view-property-details.html?slug=$1 [L,R=302]
+
 # Remove trailing slash
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)/$ /$1 [L,R=301]
