@@ -522,6 +522,37 @@ function HomePageContent() {
           }
         }}
         onDirections={handleDetailDirections}
+        onGeographic={() => {
+          if (!detailProperty || !mapInstance.current) return;
+          const map = mapInstance.current;
+          const lat = detailProperty.lat;
+          const lng = detailProperty.lng;
+          // Clear all overlays
+          overlays.current.forEach((o) => (o as unknown as { remove: () => void }).remove());
+          overlays.current = [];
+          // Remove previous single marker
+          if (singleMarker.current) { singleMarker.current.setMap(null); singleMarker.current = null; }
+          // Pan and zoom
+          map.panTo({ lat, lng });
+          map.setZoom(14);
+          // Place standard Google Maps pin
+          singleMarker.current = new window.google.maps.Marker({
+            position: { lat, lng },
+            map,
+            title: detailProperty.property_name,
+          });
+          // Draw red circle around property
+          new window.google.maps.Circle({
+            map,
+            center: { lat, lng },
+            radius: 2000,
+            fillColor: "#dc2626",
+            fillOpacity: 0.05,
+            strokeColor: "#dc2626",
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+          });
+        }}
         on3DView={handle3DView}
         onImmersiveView={handleImmersiveView}
       />

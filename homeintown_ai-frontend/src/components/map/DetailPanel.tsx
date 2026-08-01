@@ -7,6 +7,7 @@ interface DetailPanelProps {
   property: ProjectProperty | null;
   onClose: () => void;
   onDirections: () => void;
+  onGeographic?: () => void;
   on3DView: () => void;
   onImmersiveView: () => void;
 }
@@ -15,6 +16,7 @@ export default function DetailPanel({
   property,
   onClose,
   onDirections,
+  onGeographic,
   on3DView,
   onImmersiveView,
 }: DetailPanelProps) {
@@ -113,9 +115,7 @@ export default function DetailPanel({
               Directions
             </button>
             <button
-              onClick={() => {
-                /* Switch to roadmap */
-              }}
+              onClick={() => { if (onGeographic) onGeographic(); }}
               className="px-3 py-1.5 bg-gray-800 text-white text-xs rounded-full whitespace-nowrap"
             >
               Geographic
