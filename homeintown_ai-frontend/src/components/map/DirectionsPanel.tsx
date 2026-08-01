@@ -8,6 +8,7 @@ interface DirectionsPanelProps {
   properties: ProjectProperty[];
   onClose: () => void;
   onNavigate: (property: ProjectProperty) => void;
+  onPropertyClick?: (property: ProjectProperty) => void;
 }
 
 export default function DirectionsPanel({
@@ -15,6 +16,7 @@ export default function DirectionsPanel({
   properties,
   onClose,
   onNavigate,
+  onPropertyClick,
 }: DirectionsPanelProps) {
   const [search, setSearch] = useState("");
 
@@ -63,7 +65,10 @@ export default function DirectionsPanel({
                 key={`dir-${property.id}`}
                 className="flex items-center justify-between px-4 py-3 border-b border-gray-50 hover:bg-gray-50 active:bg-gray-100 transition cursor-pointer"
                 onClick={() => {
-                  if (property.slug) {
+                  if (onPropertyClick) {
+                    onPropertyClick(property);
+                    onClose();
+                  } else if (property.slug) {
                     window.location.href = `/view-property-details?slug=${property.slug}`;
                   }
                 }}

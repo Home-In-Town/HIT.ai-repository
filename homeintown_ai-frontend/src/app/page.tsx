@@ -487,6 +487,7 @@ function HomePageContent() {
         properties={properties}
         onClose={() => setShowDirections(false)}
         onNavigate={handleNavigate}
+        onPropertyClick={(property) => setDetailProperty(property)}
       />
 
       <DetailPanel
