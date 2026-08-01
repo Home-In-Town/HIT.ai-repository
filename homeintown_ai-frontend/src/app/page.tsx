@@ -45,6 +45,7 @@ function HomePageContent() {
   const [showDirections, setShowDirections] = useState(false);
   const [showIncomplete, setShowIncomplete] = useState(false);
   const [streetViewCoords, setStreetViewCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [singleViewActive, setSingleViewActive] = useState(false);
 
   // ─── URL Params (for directions from property details page) ───
   const searchParams = useSearchParams();
@@ -137,6 +138,7 @@ function HomePageContent() {
           (result: unknown, status: string) => {
             if (status === "OK") {
               renderer.setDirections(result);
+              setSingleViewActive(true);
             } else {
               console.error("Directions failed:", status);
             }
@@ -416,7 +418,7 @@ function HomePageContent() {
 
         svc.route({ origin, destination: { lat: property.lat, lng: property.lng }, travelMode: (window.google.maps as unknown as Record<string, Record<string, string>>).TravelMode.DRIVING },
           (result: unknown, status: string) => {
-            if (status === "OK") { renderer.setDirections(result); setShowDirections(false); }
+            if (status === "OK") { renderer.setDirections(result); setShowDirections(false); setSingleViewActive(true); }
             else alert("Could not get directions.");
           }
         );
@@ -448,6 +450,29 @@ function HomePageContent() {
   return (
     <div className="relative w-full h-screen overflow-hidden">
       <div ref={mapRef} className="absolute inset-0 z-0" />
+
+      {/* Back button when in Geographic/Direction/Single view */}
+      {singleViewActive && !detailProperty && (
+        <button
+          onClick={() => {
+            // Remove pin
+            if (singleMarker.current) { singleMarker.current.setMap(null); singleMarker.current = null; }
+            // Remove circle
+            if (geoCircle.current) { geoCircle.current.setMap(null); geoCircle.current = null; }
+            // Remove directions
+            if (directionsRenderer.current) { directionsRenderer.current.setMap(null); directionsRenderer.current = null; }
+            // Restore all property markers
+            if (mapInstance.current && properties.length > 0) {
+              placePropertyMarkers(mapInstance.current, activeCategory, properties);
+              mapInstance.current.setZoom(12);
+            }
+            setSingleViewActive(false);
+          }}
+          className="absolute top-4 right-4 z-30 px-4 py-2 bg-white text-gray-800 text-sm font-medium rounded-full shadow-lg border border-gray-200 hover:bg-gray-50 transition flex items-center gap-2"
+        >
+          ✕ Back to all
+        </button>
+      )}
 
       <SearchBar
         searchQuery={searchQuery}
@@ -558,6 +583,7 @@ function HomePageContent() {
           });
           // Close panel on mobile so map is visible
           setDetailProperty(null);
+          setSingleViewActive(true);
         }}
         on3DView={handle3DView}
         onImmersiveView={handleImmersiveView}
