@@ -1,6 +1,5 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import { apiRequest } from "@/lib/api";
@@ -64,14 +63,19 @@ function formatStatus(status: string): string {
 }
 
 function PropertyContent() {
-  const searchParams = useSearchParams();
-  const slug = searchParams.get("slug");
   const [project, setProject] = useState<ProjectData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeImage, setActiveImage] = useState(0);
   const [showEnquiry, setShowEnquiry] = useState(false);
   const [mapView, setMapView] = useState<"roadmap" | "satellite" | "3d" | "streetview">("roadmap");
+  const [slug, setSlug] = useState<string | null>(null);
+
+  // Get slug from URL on client side
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setSlug(params.get("slug"));
+  }, []);
 
   useEffect(() => {
     if (!slug) return;
