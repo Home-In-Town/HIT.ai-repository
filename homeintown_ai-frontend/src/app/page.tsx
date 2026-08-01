@@ -556,6 +556,8 @@ function HomePageContent() {
             strokeOpacity: 0.8,
             strokeWeight: 2,
           });
+          // Close panel on mobile so map is visible
+          setDetailProperty(null);
         }}
         on3DView={handle3DView}
         onImmersiveView={handleImmersiveView}
