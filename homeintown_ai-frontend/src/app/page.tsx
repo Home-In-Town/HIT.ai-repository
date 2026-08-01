@@ -545,7 +545,7 @@ function HomePageContent() {
           new window.google.maps.Circle({
             map,
             center: { lat, lng },
-            radius: 5000,
+            radius: 3500,
             fillColor: "#dc2626",
             fillOpacity: 0.05,
             strokeColor: "#dc2626",
