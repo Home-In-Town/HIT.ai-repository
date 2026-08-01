@@ -451,26 +451,23 @@ function HomePageContent() {
     <div className="relative w-full h-screen overflow-hidden">
       <div ref={mapRef} className="absolute inset-0 z-0" />
 
-      {/* Back button when in Geographic/Direction/Single view */}
+      {/* Back arrow when in Geographic/Direction/Single view */}
       {singleViewActive && !detailProperty && (
         <button
           onClick={() => {
-            // Remove pin
             if (singleMarker.current) { singleMarker.current.setMap(null); singleMarker.current = null; }
-            // Remove circle
             if (geoCircle.current) { geoCircle.current.setMap(null); geoCircle.current = null; }
-            // Remove directions
             if (directionsRenderer.current) { directionsRenderer.current.setMap(null); directionsRenderer.current = null; }
-            // Restore all property markers
             if (mapInstance.current && properties.length > 0) {
               placePropertyMarkers(mapInstance.current, activeCategory, properties);
               mapInstance.current.setZoom(12);
             }
             setSingleViewActive(false);
           }}
-          className="absolute top-4 right-4 z-30 px-4 py-2 bg-white text-gray-800 text-sm font-medium rounded-full shadow-lg border border-gray-200 hover:bg-gray-50 transition flex items-center gap-2"
+          className="absolute top-[130px] left-4 z-30 w-9 h-9 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition"
+          aria-label="Back to all properties"
         >
-          ✕ Back to all
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
         </button>
       )}
 
