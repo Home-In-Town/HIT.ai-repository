@@ -509,7 +509,13 @@ function HomePageContent() {
 
       <DetailPanel
         property={detailProperty}
-        onClose={() => setDetailProperty(null)}
+        onClose={() => {
+          setDetailProperty(null);
+          // Restore all property markers
+          if (mapInstance.current && properties.length > 0) {
+            placePropertyMarkers(mapInstance.current, activeCategory, properties);
+          }
+        }}
         onDirections={handleDetailDirections}
         on3DView={handle3DView}
         onImmersiveView={handleImmersiveView}
