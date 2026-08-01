@@ -487,7 +487,13 @@ function HomePageContent() {
         properties={properties}
         onClose={() => setShowDirections(false)}
         onNavigate={handleNavigate}
-        onPropertyClick={(property) => setDetailProperty(property)}
+        onPropertyClick={(property) => {
+          setDetailProperty(property);
+          if (mapInstance.current) {
+            mapInstance.current.panTo({ lat: property.lat, lng: property.lng });
+            mapInstance.current.setZoom(15);
+          }
+        }}
       />
 
       <DetailPanel
