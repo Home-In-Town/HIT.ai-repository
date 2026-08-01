@@ -490,8 +490,19 @@ function HomePageContent() {
         onPropertyClick={(property) => {
           setDetailProperty(property);
           if (mapInstance.current) {
-            mapInstance.current.panTo({ lat: property.lat, lng: property.lng });
-            mapInstance.current.setZoom(15);
+            const map = mapInstance.current;
+            // Clear all property overlays
+            overlays.current.forEach((o) => (o as unknown as { remove: () => void }).remove());
+            overlays.current = [];
+            // Pan and zoom to property
+            map.panTo({ lat: property.lat, lng: property.lng });
+            map.setZoom(15);
+            // Place standard Google Maps pin
+            new window.google.maps.Marker({
+              position: { lat: property.lat, lng: property.lng },
+              map,
+              title: property.property_name,
+            });
           }
         }}
       />
