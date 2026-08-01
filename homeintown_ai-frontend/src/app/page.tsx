@@ -46,6 +46,11 @@ function HomePageContent() {
   const [showIncomplete, setShowIncomplete] = useState(false);
   const [streetViewCoords, setStreetViewCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [singleViewActive, setSingleViewActive] = useState(false);
+  const [geoMode, setGeoMode] = useState(false);
+  const [geoCenter, setGeoCenter] = useState<{ lat: number; lng: number } | null>(null);
+  const [activePlaceCategory, setActivePlaceCategory] = useState("");
+  const [showPlaceFilter, setShowPlaceFilter] = useState(false);
+  const placeMarkers = useRef<google.maps.Marker[]>([]);
 
   // ─── URL Params (for directions from property details page) ───
   const searchParams = useSearchParams();
@@ -446,6 +451,66 @@ function HomePageContent() {
     setDetailProperty(null);
   };
 
+  // ─── Nearby Places Search ───
+  const searchNearbyPlaces = (category: string) => {
+    if (!mapInstance.current || !geoCenter) return;
+    const map = mapInstance.current;
+
+    // Clear previous place markers
+    placeMarkers.current.forEach((m) => m.setMap(null));
+    placeMarkers.current = [];
+
+    setActivePlaceCategory(category);
+
+    const service = new (window.google.maps as any).places.PlacesService(map);
+    const request = {
+      location: new window.google.maps.LatLng(geoCenter.lat, geoCenter.lng),
+      radius: 2500,
+      type: category,
+    };
+
+    service.nearbySearch(request, (results: any[], status: string) => {
+      if (status === "OK" && results) {
+        results.forEach((place: any) => {
+          if (!place.geometry?.location) return;
+          const marker = new window.google.maps.Marker({
+            position: place.geometry.location,
+            map,
+            title: place.name,
+            icon: {
+              url: place.icon,
+              scaledSize: new (window.google.maps as any).Size(24, 24),
+            } as any,
+          });
+
+          const infoWindow = new (window.google.maps as any).InfoWindow({
+            content: `<div style="padding:4px;max-width:200px;"><strong style="font-size:12px;">${place.name}</strong><p style="font-size:11px;color:#666;margin:2px 0 0;">${place.vicinity || ""}</p></div>`,
+          });
+          marker.addListener("click", () => infoWindow.open(map, marker));
+
+          placeMarkers.current.push(marker);
+        });
+      }
+    });
+  };
+
+  // ─── Clear Geo Mode ───
+  const exitGeoMode = () => {
+    placeMarkers.current.forEach((m) => m.setMap(null));
+    placeMarkers.current = [];
+    if (singleMarker.current) { singleMarker.current.setMap(null); singleMarker.current = null; }
+    if (geoCircle.current) { geoCircle.current.setMap(null); geoCircle.current = null; }
+    if (directionsRenderer.current) { directionsRenderer.current.setMap(null); directionsRenderer.current = null; }
+    setGeoMode(false);
+    setGeoCenter(null);
+    setActivePlaceCategory("");
+    setSingleViewActive(false);
+    if (mapInstance.current && properties.length > 0) {
+      placePropertyMarkers(mapInstance.current, activeCategory, properties);
+      mapInstance.current.setZoom(12);
+    }
+  };
+
   // ─── Render ───
   return (
     <div className="relative w-full h-screen overflow-hidden">
@@ -454,16 +519,7 @@ function HomePageContent() {
       {/* Back arrow when in Geographic/Direction/Single view */}
       {singleViewActive && !detailProperty && (
         <button
-          onClick={() => {
-            if (singleMarker.current) { singleMarker.current.setMap(null); singleMarker.current = null; }
-            if (geoCircle.current) { geoCircle.current.setMap(null); geoCircle.current = null; }
-            if (directionsRenderer.current) { directionsRenderer.current.setMap(null); directionsRenderer.current = null; }
-            if (mapInstance.current && properties.length > 0) {
-              placePropertyMarkers(mapInstance.current, activeCategory, properties);
-              mapInstance.current.setZoom(12);
-            }
-            setSingleViewActive(false);
-          }}
+          onClick={exitGeoMode}
           className="absolute top-[130px] left-4 z-30 w-9 h-9 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition"
           aria-label="Back to all properties"
         >
@@ -471,18 +527,85 @@ function HomePageContent() {
         </button>
       )}
 
-      <SearchBar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onSearch={handleSearch}
-        categoryTabs={CATEGORY_TABS}
-        activeCategory={activeCategory}
-        onCategoryChange={(name) => {
-          setActiveCategory(name);
-          if (mapInstance.current) placePropertyMarkers(mapInstance.current, name);
-        }}
-        onDirectionsClick={() => setShowDirections(true)}
-      />
+      {!geoMode ? (
+        <SearchBar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onSearch={handleSearch}
+          categoryTabs={CATEGORY_TABS}
+          activeCategory={activeCategory}
+          onCategoryChange={(name) => {
+            setActiveCategory(name);
+            if (mapInstance.current) placePropertyMarkers(mapInstance.current, name);
+          }}
+          onDirectionsClick={() => setShowDirections(true)}
+        />
+      ) : (
+        <div className="absolute top-0 left-0 z-10 p-3 max-w-[420px]">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 mt-1">
+            <button
+              onClick={() => searchNearbyPlaces("school")}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition ${activePlaceCategory === "school" ? "bg-green-600 text-white shadow" : "bg-white text-gray-700 border border-gray-200"}`}
+            >
+              🏫 Schools
+            </button>
+            <button
+              onClick={() => searchNearbyPlaces("hospital")}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition ${activePlaceCategory === "hospital" ? "bg-green-600 text-white shadow" : "bg-white text-gray-700 border border-gray-200"}`}
+            >
+              🏥 Hospitals
+            </button>
+            <button
+              onClick={() => searchNearbyPlaces("park")}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition ${activePlaceCategory === "park" ? "bg-green-600 text-white shadow" : "bg-white text-gray-700 border border-gray-200"}`}
+            >
+              🌳 Parks
+            </button>
+            <button
+              onClick={() => setShowPlaceFilter(true)}
+              className="px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 transition"
+            >
+              🔍 More
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Place Filter Modal */}
+      {showPlaceFilter && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-end md:items-center justify-center" onClick={() => setShowPlaceFilter(false)}>
+          <div className="bg-white rounded-t-2xl md:rounded-2xl w-full max-w-md p-5 max-h-[70vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-bold text-gray-800">Nearby Places</h3>
+              <button onClick={() => setShowPlaceFilter(false)} className="text-gray-400 hover:text-gray-700 text-lg">✕</button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { type: "school", label: "🏫 Schools" },
+                { type: "hospital", label: "🏥 Hospitals" },
+                { type: "park", label: "🌳 Parks" },
+                { type: "subway_station", label: "🚇 Metro" },
+                { type: "bus_station", label: "🚌 Bus Stops" },
+                { type: "restaurant", label: "🍽️ Restaurants" },
+                { type: "bank", label: "🏦 Banks" },
+                { type: "gas_station", label: "⛽ Petrol Pumps" },
+                { type: "gym", label: "💪 Gyms" },
+                { type: "supermarket", label: "🛒 Market" },
+                { type: "shopping_mall", label: "🏬 Malls" },
+                { type: "local_government_office", label: "🏛️ Govt Office" },
+              ].map((item) => (
+                <button
+                  key={item.type}
+                  onClick={() => { searchNearbyPlaces(item.type); setShowPlaceFilter(false); }}
+                  className={`px-3 py-2.5 rounded-lg text-xs font-medium text-left transition ${activePlaceCategory === item.type ? "bg-green-100 border-green-500 border text-green-800" : "bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100"}`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* AI Guide */}
       <div className="absolute bottom-14 left-4 z-10">
@@ -581,6 +704,8 @@ function HomePageContent() {
           // Close panel on mobile so map is visible
           setDetailProperty(null);
           setSingleViewActive(true);
+          setGeoMode(true);
+          setGeoCenter({ lat, lng });
         }}
         on3DView={handle3DView}
         onImmersiveView={handleImmersiveView}
