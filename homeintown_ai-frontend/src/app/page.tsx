@@ -50,6 +50,7 @@ function HomePageContent() {
   const urlLng = searchParams.get("lng");
   const urlDirections = searchParams.get("directions");
   const urlOnly = searchParams.get("only");
+  const urlView = searchParams.get("view");
 
   // ─── Show only single property marker when "only=true" ───
   useEffect(() => {
@@ -69,16 +70,31 @@ function HomePageContent() {
     if (locationMarker.current) { locationMarker.current.setMap(null); locationMarker.current = null; }
     if (locationCircle.current) { locationCircle.current.setMap(null); locationCircle.current = null; }
 
+    // Set map type based on view param
+    if (urlView === "satellite" || urlView === "3d") {
+      (map as any).setMapTypeId("satellite");
+      (map as any).setTilt(urlView === "3d" ? 45 : 0);
+      map.setZoom(urlView === "3d" ? 18 : 17);
+    } else if (urlView === "streetview") {
+      const panorama = (map as any).getStreetView();
+      panorama.setPosition({ lat, lng });
+      panorama.setPov({ heading: 210, pitch: 10 });
+      panorama.setVisible(true);
+    } else {
+      map.setZoom(16);
+    }
+
     // Pan to property and place a single marker
     map.panTo({ lat, lng });
-    map.setZoom(16);
 
-    new window.google.maps.Marker({
-      position: { lat, lng },
-      map,
-      title: "Property Location",
-    });
-  }, [urlLat, urlLng, urlOnly, mapReady]);
+    if (urlView !== "streetview") {
+      new window.google.maps.Marker({
+        position: { lat, lng },
+        map,
+        title: "Property Location",
+      });
+    }
+  }, [urlLat, urlLng, urlOnly, urlView, mapReady]);
 
   // ─── Auto-trigger directions when URL params are present ───
   useEffect(() => {
@@ -89,6 +105,15 @@ function HomePageContent() {
     if (isNaN(destLat) || isNaN(destLng)) return;
 
     const map = mapInstance.current;
+
+    // Clear all property markers
+    overlays.current.forEach((o) => (o as unknown as { remove: () => void }).remove());
+    overlays.current = [];
+
+    // Remove user location marker/circle
+    if (locationMarker.current) { locationMarker.current.setMap(null); locationMarker.current = null; }
+    if (locationCircle.current) { locationCircle.current.setMap(null); locationCircle.current = null; }
+
     map.panTo({ lat: destLat, lng: destLng });
     map.setZoom(14);
 
@@ -126,6 +151,8 @@ function HomePageContent() {
 
   // ─── Fetch projects from backend ───
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("only") === "true" || params.get("directions") === "true") return;
     const fetchProjects = async () => {
       try {
         const data = await apiRequest<Record<string, unknown>[]>("public/projects");
@@ -147,6 +174,10 @@ function HomePageContent() {
           }
         });
 
+        // Double check before setting state
+        const currentParams = new URLSearchParams(window.location.search);
+        if (currentParams.get("only") === "true" || currentParams.get("directions") === "true") return;
+        
         setProperties(mapped);
         setIncompleteProperties(incomplete);
       } catch (error) {
@@ -158,7 +189,8 @@ function HomePageContent() {
 
   // ─── Place markers when map + data ready ───
   useEffect(() => {
-    if (urlOnly === "true") return; // Skip when showing single property
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("only") === "true" || params.get("directions") === "true") return;
     if (mapReady && mapInstance.current && properties.length > 0) {
       placePropertyMarkers(mapInstance.current, activeCategory, properties);
       const first = properties[0];
@@ -207,8 +239,9 @@ function HomePageContent() {
     });
     mapInstance.current = map;
     setMapReady(true);
-    // Skip user location when showing single property only
-    if (!(new URLSearchParams(window.location.search)).get("only")) {
+    // Skip user location when showing single property or directions
+    const params = new URLSearchParams(window.location.search);
+    if (!params.get("only") && !params.get("directions")) {
       getUserLocation();
     }
   };

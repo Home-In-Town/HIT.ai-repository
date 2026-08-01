@@ -216,20 +216,20 @@ function PropertyContent() {
             {/* Map Action Buttons */}
             <div className="flex gap-2 mb-3 flex-wrap">
               {project.googleMapLink && (
-                <a href={`https://homeintown.ai/?lat=${project.latitude}&lng=${project.longitude}&directions=true`} className="px-3 py-1.5 bg-green-700 text-white text-xs rounded-full">
+                <a href={`/?lat=${project.latitude}&lng=${project.longitude}&directions=true`} className="px-3 py-1.5 bg-green-700 text-white text-xs rounded-full">
                   📍 Directions
                 </a>
               )}
-              <a href={`https://homeintown.ai/?lat=${project.latitude}&lng=${project.longitude}&only=true`} className={`px-3 py-1.5 text-xs rounded-full ${mapView === "roadmap" ? "bg-blue-600 text-white" : "bg-gray-700 text-white"}`}>
+              <a href={`/?lat=${project.latitude}&lng=${project.longitude}&only=true`} className={`px-3 py-1.5 text-xs rounded-full ${mapView === "roadmap" ? "bg-blue-600 text-white" : "bg-gray-700 text-white"}`}>
                 🗺️ Map
               </a>
-              <button onClick={() => setMapView("satellite")} className={`px-3 py-1.5 text-xs rounded-full ${mapView === "satellite" ? "bg-blue-600 text-white" : "bg-gray-700 text-white"}`}>
+              <button onClick={() => { window.location.href = `/?lat=${project.latitude}&lng=${project.longitude}&only=true&view=satellite`; }} className="px-3 py-1.5 text-xs rounded-full bg-gray-700 text-white">
                 🛰️ Satellite
               </button>
-              <button onClick={() => setMapView("3d")} className={`px-3 py-1.5 text-xs rounded-full ${mapView === "3d" ? "bg-blue-600 text-white" : "bg-gray-700 text-white"}`}>
+              <button onClick={() => { window.location.href = `/?lat=${project.latitude}&lng=${project.longitude}&only=true&view=3d`; }} className="px-3 py-1.5 text-xs rounded-full bg-gray-700 text-white">
                 🏠 3D View
               </button>
-              <button onClick={() => setMapView("streetview")} className={`px-3 py-1.5 text-xs rounded-full ${mapView === "streetview" ? "bg-blue-600 text-white" : "bg-gray-700 text-white"}`}>
+              <button onClick={() => { window.location.href = `/?lat=${project.latitude}&lng=${project.longitude}&only=true&view=streetview`; }} className="px-3 py-1.5 text-xs rounded-full bg-gray-700 text-white">
                 👁️ Virtual View
               </button>
             </div>
