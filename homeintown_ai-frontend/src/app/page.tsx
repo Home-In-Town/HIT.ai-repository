@@ -32,6 +32,7 @@ function HomePageContent() {
   const locationCircle = useRef<google.maps.Circle | null>(null);
   const overlays = useRef<google.maps.OverlayView[]>([]);
   const directionsRenderer = useRef<google.maps.DirectionsRenderer | null>(null);
+  const singleMarker = useRef<google.maps.Marker | null>(null);
 
   // ─── State ───
   const [searchQuery, setSearchQuery] = useState("");
@@ -494,11 +495,13 @@ function HomePageContent() {
             // Clear all property overlays
             overlays.current.forEach((o) => (o as unknown as { remove: () => void }).remove());
             overlays.current = [];
+            // Remove previous single marker if any
+            if (singleMarker.current) { singleMarker.current.setMap(null); singleMarker.current = null; }
             // Pan and zoom to property
             map.panTo({ lat: property.lat, lng: property.lng });
             map.setZoom(15);
             // Place standard Google Maps pin
-            new window.google.maps.Marker({
+            singleMarker.current = new window.google.maps.Marker({
               position: { lat: property.lat, lng: property.lng },
               map,
               title: property.property_name,
@@ -511,6 +514,8 @@ function HomePageContent() {
         property={detailProperty}
         onClose={() => {
           setDetailProperty(null);
+          // Remove single marker pin
+          if (singleMarker.current) { singleMarker.current.setMap(null); singleMarker.current = null; }
           // Restore all property markers
           if (mapInstance.current && properties.length > 0) {
             placePropertyMarkers(mapInstance.current, activeCategory, properties);
