@@ -173,13 +173,27 @@ export function mapProject(
     price: `₹${startingPrice.toLocaleString("en-IN")}`,
     price_short: priceShort,
     type:
-      ["plot", "Plot", "PLOT"].includes(p.projectType as string)
-        ? "Plot"
-        : ["rent", "Rent", "RENT"].includes(p.projectType as string)
-        ? "Rent"
-        : ["villa", "Villa", "VILLA"].includes(p.projectType as string)
-        ? "Villa"
-        : "Flat",
+      (() => {
+        const pt = ((p.projectType as string) || "").toLowerCase();
+        const propType = ((p.propertyType as string) || "").toLowerCase();
+        const cat = ((p.category as string) || "").toLowerCase();
+
+        // Check propertyType first (more specific)
+        if (propType.includes("plot")) return "Plot";
+        if (propType.includes("villa")) return "Villa";
+        if (propType.includes("apartment") || propType.includes("flat")) return "Flat";
+        if (propType.includes("rent")) return "Rent";
+
+        // Fallback to category
+        if (cat.includes("commercial") || cat.includes("mixed")) return "Plot";
+
+        // Fallback to projectType
+        if (pt === "plot") return "Plot";
+        if (pt === "villa") return "Villa";
+        if (pt === "rent") return "Rent";
+
+        return "Flat";
+      })(),
     builder:
       (p.builderName as string) ||
       (p.owner as Record<string, string>)?.name ||
