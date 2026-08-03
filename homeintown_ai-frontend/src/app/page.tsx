@@ -245,6 +245,43 @@ function HomePageContent() {
       fullscreenControl: false,
       zoomControl: false,
       keyboardShortcuts: false,
+      styles: [
+        // Locality/neighborhood names - more visible
+        { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#111827" }] },
+        { featureType: "administrative.locality", elementType: "labels.text.stroke", stylers: [{ color: "#ffffff" }, { weight: "3" }] },
+        { featureType: "administrative.neighborhood", elementType: "labels.text.fill", stylers: [{ color: "#1a56db" }] },
+        { featureType: "administrative.neighborhood", elementType: "labels.text.stroke", stylers: [{ color: "#ffffff" }] },
+
+        // Schools - yellow tint + visible labels
+        { featureType: "poi.school", elementType: "geometry.fill", stylers: [{ color: "#fef3c7" }] },
+        { featureType: "poi.school", elementType: "labels.text.fill", stylers: [{ color: "#92400e" }] },
+        { featureType: "poi.school", elementType: "labels.icon", stylers: [{ visibility: "on" }] },
+
+        // Parks - bright green
+        { featureType: "poi.park", elementType: "geometry.fill", stylers: [{ color: "#bbf7d0" }] },
+        { featureType: "poi.park", elementType: "labels.text.fill", stylers: [{ color: "#166534" }] },
+        { featureType: "poi.park", elementType: "labels.icon", stylers: [{ visibility: "on" }] },
+
+        // Hospitals
+        { featureType: "poi.medical", elementType: "labels.text.fill", stylers: [{ color: "#b91c1c" }] },
+        { featureType: "poi.medical", elementType: "labels.icon", stylers: [{ visibility: "on" }] },
+
+        // Government
+        { featureType: "poi.government", elementType: "labels.text.fill", stylers: [{ color: "#1e40af" }] },
+        { featureType: "poi.government", elementType: "labels.icon", stylers: [{ visibility: "on" }] },
+
+        // Attractions & Business
+        { featureType: "poi.attraction", elementType: "labels", stylers: [{ visibility: "on" }] },
+        { featureType: "poi.business", elementType: "labels", stylers: [{ visibility: "on" }] },
+
+        // Water - light blue
+        { featureType: "water", elementType: "geometry.fill", stylers: [{ color: "#bfdbfe" }] },
+        { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#1e40af" }] },
+
+        // Roads - cleaner labels
+        { featureType: "road.arterial", elementType: "labels.text.fill", stylers: [{ color: "#374151" }] },
+        { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#1f2937" }] },
+      ],
     });
     mapInstance.current = map;
     setMapReady(true);
