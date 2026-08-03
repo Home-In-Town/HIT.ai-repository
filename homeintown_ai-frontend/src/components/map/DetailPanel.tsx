@@ -37,19 +37,27 @@ export default function DetailPanel({
 
           {/* Header: Status + Share + Close */}
           <div className="px-5 pt-4 pb-2 flex items-start justify-between">
-            <div>
-              <span className="text-xs font-semibold text-green-700 uppercase">
-                {property.projectStatus === "ready-to-move"
-                  ? "Ready to Move"
+            <div className="flex-1 min-w-0">
+              {/* Status Badge */}
+              <span className={`inline-block text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded mb-2 ${
+                property.projectStatus === "ready-to-move"
+                  ? "bg-green-100 text-green-700"
                   : property.projectStatus === "pre-launch"
-                  ? "Pre-Launch"
-                  : "Under Construction"}
+                  ? "bg-blue-100 text-blue-700"
+                  : "bg-amber-100 text-amber-700"
+              }`}>
+                {property.projectStatus === "ready-to-move"
+                  ? "✅ Ready to Move"
+                  : property.projectStatus === "pre-launch"
+                  ? "🔔 Pre-Launch"
+                  : "🏗️ Under Construction"}
               </span>
-              <h2 className="text-xl font-bold text-gray-900 mt-1">
+              {/* Name */}
+              <h2 className="text-2xl font-extrabold text-gray-900 leading-tight">
                 {property.property_name}
               </h2>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 ml-2 shrink-0">
               <button className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600">
                 <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
               </button>
@@ -66,43 +74,50 @@ export default function DetailPanel({
           {/* Address */}
           <div className="px-5 pb-3">
             <p className="text-xs text-gray-500 flex items-start gap-1">
-              <span>📍</span>
+              <span className="mt-0.5">📍</span>
               <span>{property.location}, {property.city}</span>
             </p>
           </div>
 
-          {/* BHK Options */}
-          {property.bhkOptions && property.bhkOptions.length > 0 && (
-            <div className="px-5 pb-3">
-              <p className="text-sm text-gray-700 font-medium">
-                {property.bhkOptions.join(", ")}
-              </p>
+          {/* BHK chips + Area */}
+          <div className="px-5 pb-3 flex items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-1.5">
+              {property.bhkOptions && property.bhkOptions.length > 0
+                ? property.bhkOptions.map((bhk: string, i: number) => (
+                    <span key={i} className="px-2.5 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded-md border border-gray-200">
+                      {bhk}
+                    </span>
+                  ))
+                : null}
             </div>
-          )}
+            {property.carpetAreaRange && (
+              <div className="text-right shrink-0">
+                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Saleable area</p>
+                <p className="text-sm font-bold text-gray-800">{property.carpetAreaRange} <span className="text-xs font-normal text-gray-500">sq ft</span></p>
+              </div>
+            )}
+          </div>
 
-          {/* Price & Area Row */}
-          <div className="px-5 pb-4 flex items-end justify-between">
-            <div>
-              <p className="text-[11px] text-gray-400">Price starting from</p>
-              <p className="text-2xl font-bold text-gray-900">
-                ₹ {property.startingPrice
+          {/* Price Row */}
+          <div className="px-5 pb-4 border-b border-gray-100">
+            <p className="text-[11px] text-gray-400 uppercase tracking-wide mb-0.5">Price starting from</p>
+            <div className="flex items-end gap-3 flex-wrap">
+              <p className="text-3xl font-black text-gray-900">
+                ₹{property.startingPrice
                   ? (property.startingPrice >= 10000000
                     ? `${(property.startingPrice / 10000000).toFixed(1)} Cr`
                     : `${(property.startingPrice / 100000).toFixed(0)} L`)
-                  : "N/A"}{" "}
-                <span className="text-sm font-normal text-gray-500">onwards</span>
+                  : "N/A"}
+                <span className="text-base font-normal text-gray-500 ml-1">onwards</span>
               </p>
               {property.pricePerSqFt && property.pricePerSqFt > 0 && (
-                <p className="text-xs text-blue-600 mt-0.5">See price details &rsaquo;</p>
+                <p className="text-xs text-gray-500 mb-1">
+                  ₹{property.pricePerSqFt.toLocaleString("en-IN")}<span className="text-gray-400">/sq.ft</span>
+                </p>
               )}
             </div>
-            {property.carpetAreaRange && (
-              <div className="text-right">
-                <p className="text-[11px] text-gray-400">Saleable area</p>
-                <p className="text-sm font-semibold text-gray-700">
-                  {property.carpetAreaRange}
-                </p>
-              </div>
+            {property.pricePerSqFt && property.pricePerSqFt > 0 && (
+              <p className="text-xs text-blue-600 mt-0.5 cursor-pointer hover:underline">See price details &rsaquo;</p>
             )}
           </div>
 
