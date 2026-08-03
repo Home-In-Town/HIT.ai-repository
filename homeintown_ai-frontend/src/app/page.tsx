@@ -307,9 +307,15 @@ function HomePageContent() {
                 </div>
               </div>
             </div>
-            <div class="marker-pill" style="display:flex;align-items:center;gap:4px;background:${bgColor};border:1.5px solid ${borderColor};border-radius:20px;padding:4px 10px;box-shadow:0 2px 8px rgba(0,0,0,0.15);font-size:12px;font-weight:600;color:${textColor};white-space:nowrap;transition:transform 0.2s ease;">
-              <span style="font-size:13px;">${icon}</span>
-              <span>${this.prop.price_short}</span>
+            <div class="marker-pill" style="display:flex;flex-direction:column;align-items:flex-start;background:${bgColor};border:1.5px solid ${borderColor};border-radius:12px;padding:5px 10px;box-shadow:0 2px 8px rgba(0,0,0,0.15);font-size:12px;font-weight:600;color:${textColor};white-space:nowrap;transition:transform 0.2s ease;min-width:90px;">
+              <div style="display:flex;align-items:center;gap:5px;margin-bottom:2px;">
+                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,0.7);animation:blink-dot 1.5s infinite;flex-shrink:0;"></span>
+                <span style="font-size:10px;font-weight:700;color:${textColor === '#ffffff' ? 'rgba(255,255,255,0.9)' : '#374151'};overflow:hidden;text-overflow:ellipsis;max-width:120px;">${this.prop.property_name}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <span style="font-size:13px;">${icon}</span>
+                <span>${this.prop.price_short}</span>
+              </div>
             </div>
           </div>
         `;
