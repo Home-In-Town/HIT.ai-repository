@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
 import { ProjectProperty } from "@/lib/mapProject";
 
 interface DetailPanelProps {
@@ -20,6 +21,42 @@ export default function DetailPanel({
   on3DView,
   onImmersiveView,
 }: DetailPanelProps) {
+  const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
+
+  // ─── Price breakdown calculator ───
+  const getPriceBreakdown = () => {
+    if (!property?.startingPrice) return null;
+    const base = property.startingPrice;
+    const isUnderConstruction = property.projectStatus !== "ready-to-move";
+
+    const gstRate = isUnderConstruction ? 0.05 : 0;
+    const stampDutyRate = 0.055; // 5.5% avg Maharashtra
+    const registrationRate = 0.01; // 1%
+
+    const gst = Math.round(base * gstRate);
+    const stampDuty = Math.round(base * stampDutyRate);
+    const registration = Math.round(base * registrationRate);
+    const total = base + gst + stampDuty + registration;
+
+    // Format helper
+    const fmt = (n: number) =>
+      n >= 10000000
+        ? `₹${(n / 10000000).toFixed(2)} Cr`
+        : `₹${(n / 100000).toFixed(1)} L`;
+
+    return {
+      base: fmt(base),
+      gst: gst > 0 ? fmt(gst) : null,
+      gstRate: isUnderConstruction ? "5%" : "0% (Ready to Move)",
+      stampDuty: fmt(stampDuty),
+      registration: fmt(registration),
+      total: fmt(total),
+      isUnderConstruction,
+    };
+  };
+
+  const breakdown = getPriceBreakdown();
+
   return (
     <div
       className={`fixed z-50 transition-transform duration-400 ease-out
@@ -117,7 +154,50 @@ export default function DetailPanel({
               )}
             </div>
             {property.pricePerSqFt && property.pricePerSqFt > 0 && (
-              <p className="text-xs text-blue-600 mt-0.5 cursor-pointer hover:underline">See price details &rsaquo;</p>
+              <p
+                className="text-xs text-blue-600 mt-1 cursor-pointer hover:underline flex items-center gap-1 select-none"
+                onClick={() => setShowPriceBreakdown(!showPriceBreakdown)}
+              >
+                {showPriceBreakdown ? "▲" : "▼"} See price details
+              </p>
+            )}
+
+            {/* Price Breakdown */}
+            {showPriceBreakdown && breakdown && (
+              <div className="mt-3 bg-gray-50 rounded-xl p-3 border border-gray-100">
+                <p className="text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">Price Breakdown</p>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-500">Base Price</span>
+                    <span className="font-semibold text-gray-800">{breakdown.base}</span>
+                  </div>
+                  {breakdown.gst && (
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-500">GST <span className="text-gray-400">({breakdown.gstRate})</span></span>
+                      <span className="font-semibold text-gray-800">{breakdown.gst}</span>
+                    </div>
+                  )}
+                  {!breakdown.isUnderConstruction && (
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-500">GST</span>
+                      <span className="font-semibold text-green-600">Exempt ✓</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-500">Stamp Duty <span className="text-gray-400">(~5.5%)</span></span>
+                    <span className="font-semibold text-gray-800">{breakdown.stampDuty}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-500">Registration <span className="text-gray-400">(~1%)</span></span>
+                    <span className="font-semibold text-gray-800">{breakdown.registration}</span>
+                  </div>
+                  <div className="flex justify-between text-xs pt-2 border-t border-gray-200">
+                    <span className="font-bold text-gray-800">Total (approx)</span>
+                    <span className="font-bold text-green-700">{breakdown.total}</span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-gray-400 mt-2">* Charges are approximate. Consult builder for exact costs.</p>
+              </div>
             )}
           </div>
 
