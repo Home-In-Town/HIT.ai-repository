@@ -108,21 +108,31 @@ export function mapProject(
   let lng = Number(p.longitude) || 0;
 
   if ((lat === 0 && lng === 0) || lat > 90 || lng > 180) {
-    // Handle DMS entered as number (e.g., 210609.8 → 21°06'09.8")
-    if (lat > 90 && lat < 999999) {
-      const s = lat.toString();
-      lat =
-        parseInt(s.substring(0, 2)) +
-        parseInt(s.substring(2, 4)) / 60 +
-        parseFloat(s.substring(4)) / 3600;
-    }
-    if (lng > 180 && lng < 9999999) {
-      const s = lng.toString();
-      lng =
-        parseInt(s.substring(0, 2)) +
-        parseInt(s.substring(2, 4)) / 60 +
-        parseFloat(s.substring(4)) / 3600;
-    }
+    // Handle DMS entered as number
+    // 6-digit: 210609.8 → 21°06'09.8"
+    // 8-digit: 21035703 → 21°03'57.03" (last 4 digits = seconds*100)
+    const parseDMS = (val: number): number => {
+      if (val === 0) return 0;
+      const s = val.toString().replace(".", "");
+      if (s.length <= 6) {
+        // e.g. 210609 → 21°06'09"
+        const orig = val.toString();
+        const deg = parseInt(orig.substring(0, 2));
+        const min = parseInt(orig.substring(2, 4));
+        const sec = parseFloat(orig.substring(4));
+        return deg + min / 60 + sec / 3600;
+      } else {
+        // e.g. 21035703 → degrees=21, minutes=03, seconds=57.03
+        const str = val.toString();
+        const deg = parseInt(str.substring(0, 2));
+        const min = parseInt(str.substring(2, 4));
+        const sec = parseFloat(str.substring(4, 6) + "." + str.substring(6));
+        return deg + min / 60 + sec / 3600;
+      }
+    };
+
+    if (lat > 90) lat = parseDMS(lat);
+    if (lng > 180) lng = parseDMS(lng);
 
     if ((lat === 0 && lng === 0) || lat > 90 || lng > 180) {
       const extracted = extractCoordsFromMapLink(
@@ -163,10 +173,12 @@ export function mapProject(
     price: `₹${startingPrice.toLocaleString("en-IN")}`,
     price_short: priceShort,
     type:
-      (p.projectType as string) === "plot"
+      ["plot", "Plot", "PLOT"].includes(p.projectType as string)
         ? "Plot"
-        : (p.projectType as string) === "rent"
+        : ["rent", "Rent", "RENT"].includes(p.projectType as string)
         ? "Rent"
+        : ["villa", "Villa", "VILLA"].includes(p.projectType as string)
+        ? "Villa"
         : "Flat",
     builder:
       (p.builderName as string) ||

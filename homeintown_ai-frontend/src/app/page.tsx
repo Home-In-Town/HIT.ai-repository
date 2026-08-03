@@ -21,6 +21,7 @@ const CATEGORY_TABS = [
   { name: "All", icon: "🏠" },
   { name: "Flat", icon: "🏢" },
   { name: "Plot", icon: "📐" },
+  { name: "Villa", icon: "🏡" },
   { name: "Rent", icon: "💰" },
 ];
 
