@@ -80,13 +80,6 @@ export default function SearchBar({
             {tab.name}
           </button>
         ))}
-        <button
-          onClick={onDirectionsClick}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-white text-gray-700 border border-gray-200 hover:bg-orange-50 hover:border-orange-300 transition"
-          title="Get Directions"
-        >
-          <span>🧭</span>
-        </button>
       </div>
     </div>
   );
