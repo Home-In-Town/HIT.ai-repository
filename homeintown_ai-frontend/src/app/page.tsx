@@ -521,7 +521,18 @@ function HomePageContent() {
             position: place.geometry.location,
             map,
             title: place.name,
-          });
+            label: {
+              text: place.name.length > 15 ? place.name.substring(0, 15) + "..." : place.name,
+              fontSize: "10px",
+              fontWeight: "600",
+              color: "#1f2937",
+            },
+            icon: {
+              url: place.icon,
+              scaledSize: new (window.google.maps as any).Size(20, 20),
+              labelOrigin: new (window.google.maps as any).Point(10, -10),
+            },
+          } as any);
 
           const infoWindow = new (window.google.maps as any).InfoWindow({
             content: `<div style="padding:4px;max-width:200px;"><strong style="font-size:12px;">${place.name}</strong><p style="font-size:11px;color:#666;margin:2px 0 0;">${place.vicinity || ""}</p></div>`,
