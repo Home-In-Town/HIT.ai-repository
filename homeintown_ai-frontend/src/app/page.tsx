@@ -521,10 +521,6 @@ function HomePageContent() {
             position: place.geometry.location,
             map,
             title: place.name,
-            icon: {
-              url: place.icon,
-              scaledSize: new (window.google.maps as any).Size(24, 24),
-            } as any,
           });
 
           const infoWindow = new (window.google.maps as any).InfoWindow({
