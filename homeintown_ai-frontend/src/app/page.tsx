@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback, Suspense } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { apiRequest } from "@/lib/api";
 import {
   ProjectProperty,
@@ -23,6 +23,51 @@ const CATEGORY_TABS = [
   { name: "Villa", icon: "🏡" },
   { name: "Rent", icon: "💰" },
 ];
+
+const PLACE_CATEGORIES = [
+  { type: "school", label: "🏫 Schools" },
+  { type: "hospital", label: "🏥 Hospitals" },
+  { type: "park", label: "🌳 Parks" },
+  { type: "subway_station", label: "🚇 Metro" },
+  { type: "bus_station", label: "🚌 Bus Stops" },
+  { type: "restaurant", label: "🍽️ Restaurants" },
+  { type: "bank", label: "🏦 Banks" },
+  { type: "gas_station", label: "⛽ Petrol Pumps" },
+  { type: "gym", label: "💪 Gyms" },
+  { type: "supermarket", label: "🛒 Market" },
+  { type: "shopping_mall", label: "🏬 Malls" },
+  { type: "local_government_office", label: "🏛️ Govt Office" },
+];
+
+const MAP_STYLES: any[] = [
+  { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#111827" }] },
+  { featureType: "administrative.locality", elementType: "labels.text.stroke", stylers: [{ color: "#ffffff" }, { weight: "3" }] },
+  { featureType: "administrative.neighborhood", elementType: "labels.text.fill", stylers: [{ color: "#1a56db" }] },
+  { featureType: "administrative.neighborhood", elementType: "labels.text.stroke", stylers: [{ color: "#ffffff" }] },
+  { featureType: "poi.school", elementType: "geometry.fill", stylers: [{ color: "#fef3c7" }] },
+  { featureType: "poi.school", elementType: "labels.text.fill", stylers: [{ color: "#92400e" }] },
+  { featureType: "poi.school", elementType: "labels.icon", stylers: [{ visibility: "on" }] },
+  { featureType: "poi.park", elementType: "geometry.fill", stylers: [{ color: "#bbf7d0" }] },
+  { featureType: "poi.park", elementType: "labels.text.fill", stylers: [{ color: "#166534" }] },
+  { featureType: "poi.park", elementType: "labels.icon", stylers: [{ visibility: "on" }] },
+  { featureType: "poi.medical", elementType: "labels.text.fill", stylers: [{ color: "#b91c1c" }] },
+  { featureType: "poi.medical", elementType: "labels.icon", stylers: [{ visibility: "on" }] },
+  { featureType: "poi.government", elementType: "labels.text.fill", stylers: [{ color: "#1e40af" }] },
+  { featureType: "poi.government", elementType: "labels.icon", stylers: [{ visibility: "on" }] },
+  { featureType: "poi.attraction", elementType: "labels", stylers: [{ visibility: "on" }] },
+  { featureType: "poi.business", elementType: "labels", stylers: [{ visibility: "on" }] },
+  { featureType: "water", elementType: "geometry.fill", stylers: [{ color: "#bfdbfe" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#1e40af" }] },
+  { featureType: "road.arterial", elementType: "labels.text.fill", stylers: [{ color: "#374151" }] },
+  { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#1f2937" }] },
+];
+
+// Helper: get URL params once (avoids repeated parsing)
+const getUrlParams = () => {
+  if (typeof window === "undefined") return { lat: null, lng: null, directions: null, only: null, view: null };
+  const p = new URLSearchParams(window.location.search);
+  return { lat: p.get("lat"), lng: p.get("lng"), directions: p.get("directions"), only: p.get("only"), view: p.get("view") };
+};
 
 function HomePageContent() {
   // ─── Refs ───
@@ -53,27 +98,18 @@ function HomePageContent() {
   const placeMarkers = useRef<google.maps.Marker[]>([]);
 
   // ─── URL Params (read once on mount) ───
-  const [urlLat, setUrlLat] = useState<string | null>(null);
-  const [urlLng, setUrlLng] = useState<string | null>(null);
-  const [urlDirections, setUrlDirections] = useState<string | null>(null);
-  const [urlOnly, setUrlOnly] = useState<string | null>(null);
-  const [urlView, setUrlView] = useState<string | null>(null);
+  const [urlParams, setUrlParams] = useState<{ lat: string | null; lng: string | null; directions: string | null; only: string | null; view: string | null }>({ lat: null, lng: null, directions: null, only: null, view: null });
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    setUrlLat(params.get("lat"));
-    setUrlLng(params.get("lng"));
-    setUrlDirections(params.get("directions"));
-    setUrlOnly(params.get("only"));
-    setUrlView(params.get("view"));
+    setUrlParams(getUrlParams());
   }, []);
 
   // ─── Show only single property marker when "only=true" ───
   useEffect(() => {
-    if (!urlLat || !urlLng || urlOnly !== "true" || !mapReady || !mapInstance.current) return;
+    if (!urlParams.lat || !urlParams.lng || urlParams.only !== "true" || !mapReady || !mapInstance.current) return;
 
-    const lat = parseFloat(urlLat);
-    const lng = parseFloat(urlLng);
+    const lat = parseFloat(urlParams.lat);
+    const lng = parseFloat(urlParams.lng);
     if (isNaN(lat) || isNaN(lng)) return;
 
     const map = mapInstance.current;
@@ -87,11 +123,11 @@ function HomePageContent() {
     if (locationCircle.current) { locationCircle.current.setMap(null); locationCircle.current = null; }
 
     // Set map type based on view param
-    if (urlView === "satellite" || urlView === "3d") {
+    if (urlParams.view === "satellite" || urlParams.view === "3d") {
       (map as any).setMapTypeId("satellite");
-      (map as any).setTilt(urlView === "3d" ? 45 : 0);
-      map.setZoom(urlView === "3d" ? 18 : 17);
-    } else if (urlView === "streetview") {
+      (map as any).setTilt(urlParams.view === "3d" ? 45 : 0);
+      map.setZoom(urlParams.view === "3d" ? 18 : 17);
+    } else if (urlParams.view === "streetview") {
       const panorama = (map as any).getStreetView();
       panorama.setPosition({ lat, lng });
       panorama.setPov({ heading: 210, pitch: 10 });
@@ -100,24 +136,19 @@ function HomePageContent() {
       map.setZoom(16);
     }
 
-    // Pan to property and place a single marker
     map.panTo({ lat, lng });
 
-    if (urlView !== "streetview") {
-      new window.google.maps.Marker({
-        position: { lat, lng },
-        map,
-        title: "Property Location",
-      });
+    if (urlParams.view !== "streetview") {
+      singleMarker.current = new window.google.maps.Marker({ position: { lat, lng }, map, title: "Property Location" });
     }
-  }, [urlLat, urlLng, urlOnly, urlView, mapReady]);
+  }, [urlParams, mapReady]);
 
   // ─── Auto-trigger directions when URL params are present ───
   useEffect(() => {
-    if (!urlLat || !urlLng || urlDirections !== "true" || !mapReady || !mapInstance.current) return;
+    if (!urlParams.lat || !urlParams.lng || urlParams.directions !== "true" || !mapReady || !mapInstance.current) return;
 
-    const destLat = parseFloat(urlLat);
-    const destLng = parseFloat(urlLng);
+    const destLat = parseFloat(urlParams.lat);
+    const destLng = parseFloat(urlParams.lng);
     if (isNaN(destLat) || isNaN(destLng)) return;
 
     const map = mapInstance.current;
@@ -164,7 +195,7 @@ function HomePageContent() {
       },
       { enableHighAccuracy: true }
     );
-  }, [urlLat, urlLng, urlDirections, mapReady]);
+  }, [urlParams, mapReady]);
 
   // ─── Fetch projects from backend ───
   useEffect(() => {
@@ -249,43 +280,7 @@ function HomePageContent() {
       fullscreenControl: false,
       zoomControl: false,
       keyboardShortcuts: false,
-      styles: [
-        // Locality/neighborhood names - more visible
-        { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#111827" }] },
-        { featureType: "administrative.locality", elementType: "labels.text.stroke", stylers: [{ color: "#ffffff" }, { weight: "3" }] },
-        { featureType: "administrative.neighborhood", elementType: "labels.text.fill", stylers: [{ color: "#1a56db" }] },
-        { featureType: "administrative.neighborhood", elementType: "labels.text.stroke", stylers: [{ color: "#ffffff" }] },
-
-        // Schools - yellow tint + visible labels
-        { featureType: "poi.school", elementType: "geometry.fill", stylers: [{ color: "#fef3c7" }] },
-        { featureType: "poi.school", elementType: "labels.text.fill", stylers: [{ color: "#92400e" }] },
-        { featureType: "poi.school", elementType: "labels.icon", stylers: [{ visibility: "on" }] },
-
-        // Parks - bright green
-        { featureType: "poi.park", elementType: "geometry.fill", stylers: [{ color: "#bbf7d0" }] },
-        { featureType: "poi.park", elementType: "labels.text.fill", stylers: [{ color: "#166534" }] },
-        { featureType: "poi.park", elementType: "labels.icon", stylers: [{ visibility: "on" }] },
-
-        // Hospitals
-        { featureType: "poi.medical", elementType: "labels.text.fill", stylers: [{ color: "#b91c1c" }] },
-        { featureType: "poi.medical", elementType: "labels.icon", stylers: [{ visibility: "on" }] },
-
-        // Government
-        { featureType: "poi.government", elementType: "labels.text.fill", stylers: [{ color: "#1e40af" }] },
-        { featureType: "poi.government", elementType: "labels.icon", stylers: [{ visibility: "on" }] },
-
-        // Attractions & Business
-        { featureType: "poi.attraction", elementType: "labels", stylers: [{ visibility: "on" }] },
-        { featureType: "poi.business", elementType: "labels", stylers: [{ visibility: "on" }] },
-
-        // Water - light blue
-        { featureType: "water", elementType: "geometry.fill", stylers: [{ color: "#bfdbfe" }] },
-        { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#1e40af" }] },
-
-        // Roads - cleaner labels
-        { featureType: "road.arterial", elementType: "labels.text.fill", stylers: [{ color: "#374151" }] },
-        { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#1f2937" }] },
-      ],
+      styles: MAP_STYLES,
     });
     mapInstance.current = map;
     setMapReady(true);
@@ -651,20 +646,7 @@ function HomePageContent() {
               <button onClick={() => setShowPlaceFilter(false)} className="text-gray-400 hover:text-gray-700 text-lg">✕</button>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {[
-                { type: "school", label: "🏫 Schools" },
-                { type: "hospital", label: "🏥 Hospitals" },
-                { type: "park", label: "🌳 Parks" },
-                { type: "subway_station", label: "🚇 Metro" },
-                { type: "bus_station", label: "🚌 Bus Stops" },
-                { type: "restaurant", label: "🍽️ Restaurants" },
-                { type: "bank", label: "🏦 Banks" },
-                { type: "gas_station", label: "⛽ Petrol Pumps" },
-                { type: "gym", label: "💪 Gyms" },
-                { type: "supermarket", label: "🛒 Market" },
-                { type: "shopping_mall", label: "🏬 Malls" },
-                { type: "local_government_office", label: "🏛️ Govt Office" },
-              ].map((item) => (
+              {PLACE_CATEGORIES.map((item) => (
                 <button
                   key={item.type}
                   onClick={() => { searchNearbyPlaces(item.type); setShowPlaceFilter(false); }}
@@ -792,13 +774,5 @@ function HomePageContent() {
 
 
 export default function HomePage() {
-  return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600" />
-      </div>
-    }>
-      <HomePageContent />
-    </Suspense>
-  );
+  return <HomePageContent />;
 }
