@@ -394,7 +394,31 @@ function HomePageContent() {
 
     const filtered = category === "All" ? data : data.filter((p) => p.type === category);
     filtered.forEach((property) => {
-      const overlay = createPriceMarker(map, property, () => setDetailProperty(property));
+      const overlay = createPriceMarker(map, property, () => {
+          setDetailProperty(property);
+          // Clear all other markers and show only this property (like Geographic mode)
+          overlays.current.forEach((o) => (o as unknown as { remove: () => void }).remove());
+          overlays.current = [];
+          if (singleMarker.current) { singleMarker.current.setMap(null); singleMarker.current = null; }
+          if (geoCircle.current) { geoCircle.current.setMap(null); geoCircle.current = null; }
+          map.panTo({ lat: property.lat, lng: property.lng });
+          map.setZoom(14);
+          singleMarker.current = new window.google.maps.Marker({
+            position: { lat: property.lat, lng: property.lng },
+            map,
+            title: property.property_name,
+          });
+          geoCircle.current = new window.google.maps.Circle({
+            map,
+            center: { lat: property.lat, lng: property.lng },
+            radius: 2500,
+            fillColor: "#16a34a",
+            fillOpacity: 0.05,
+            strokeColor: "#16a34a",
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+          });
+        });
       overlays.current.push(overlay as unknown as google.maps.OverlayView);
     });
   };
@@ -521,18 +545,11 @@ function HomePageContent() {
             position: place.geometry.location,
             map,
             title: place.name,
-            label: {
-              text: place.name.length > 15 ? place.name.substring(0, 15) + "..." : place.name,
-              fontSize: "10px",
-              fontWeight: "600",
-              color: "#1f2937",
-            },
             icon: {
               url: place.icon,
-              scaledSize: new (window.google.maps as any).Size(20, 20),
-              labelOrigin: new (window.google.maps as any).Point(10, -10),
-            },
-          } as any);
+              scaledSize: new (window.google.maps as any).Size(24, 24),
+            } as any,
+          });
 
           const infoWindow = new (window.google.maps as any).InfoWindow({
             content: `<div style="padding:4px;max-width:200px;"><strong style="font-size:12px;">${place.name}</strong><p style="font-size:11px;color:#666;margin:2px 0 0;">${place.vicinity || ""}</p></div>`,
