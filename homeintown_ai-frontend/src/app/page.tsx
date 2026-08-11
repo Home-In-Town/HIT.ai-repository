@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 import { apiRequest } from "@/lib/api";
 import {
   ProjectProperty,
@@ -53,13 +52,21 @@ function HomePageContent() {
   const [showPlaceFilter, setShowPlaceFilter] = useState(false);
   const placeMarkers = useRef<google.maps.Marker[]>([]);
 
-  // ─── URL Params (for directions from property details page) ───
-  const searchParams = useSearchParams();
-  const urlLat = searchParams.get("lat");
-  const urlLng = searchParams.get("lng");
-  const urlDirections = searchParams.get("directions");
-  const urlOnly = searchParams.get("only");
-  const urlView = searchParams.get("view");
+  // ─── URL Params (read once on mount) ───
+  const [urlLat, setUrlLat] = useState<string | null>(null);
+  const [urlLng, setUrlLng] = useState<string | null>(null);
+  const [urlDirections, setUrlDirections] = useState<string | null>(null);
+  const [urlOnly, setUrlOnly] = useState<string | null>(null);
+  const [urlView, setUrlView] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setUrlLat(params.get("lat"));
+    setUrlLng(params.get("lng"));
+    setUrlDirections(params.get("directions"));
+    setUrlOnly(params.get("only"));
+    setUrlView(params.get("view"));
+  }, []);
 
   // ─── Show only single property marker when "only=true" ───
   useEffect(() => {
@@ -184,10 +191,6 @@ function HomePageContent() {
           }
         });
 
-        // Double check before setting state
-        const currentParams = new URLSearchParams(window.location.search);
-        if (currentParams.get("only") === "true" || currentParams.get("directions") === "true") return;
-        
         setProperties(mapped);
         setIncompleteProperties(incomplete);
       } catch (error) {
