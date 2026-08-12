@@ -39,7 +39,20 @@ const projectSchema = new mongoose.Schema({
     pricePerSqFt: Number,
     totalPriceRange: String,
     paymentPlan: String,
-    bankLoanAvailable: { type: Boolean, default: false }
+    bankLoanAvailable: { type: Boolean, default: false },
+    priceBreakdown: {
+      basePrice: Number,
+      gst: Number,
+      gstPercentage: { type: Number, default: 5 },
+      stampDuty: Number,
+      stampDutyPercentage: { type: Number, default: 5.5 },
+      registration: Number,
+      registrationPercentage: { type: Number, default: 1 },
+      legalCharges: Number,
+      maintenanceDeposit: Number,
+      otherCharges: Number,
+      totalPrice: Number
+    }
   },
   configuration: {
     bhkOptions: [String],

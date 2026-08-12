@@ -27,12 +27,52 @@ export default function DetailPanel({
     if (!property?.startingPrice) return null;
     const base = property.startingPrice;
     const isUC = property.projectStatus !== "ready-to-move";
+
+    // Use backend data if available, otherwise calculate estimates
+    const bd = property.priceBreakdown;
+    if (bd && bd.totalPrice) {
+      const fmt = (n: number | undefined) => {
+        if (!n) return null;
+        return n >= 10000000 ? `₹${(n / 10000000).toFixed(2)} Cr` : `₹${(n / 100000).toFixed(1)} L`;
+      };
+      return {
+        base: fmt(bd.basePrice || base) || fmt(base)!,
+        gst: fmt(bd.gst),
+        gstRate: `${bd.gstPercentage || 5}%`,
+        stamp: fmt(bd.stampDuty),
+        stampRate: `${bd.stampDutyPercentage || 5.5}%`,
+        reg: fmt(bd.registration),
+        regRate: `${bd.registrationPercentage || 1}%`,
+        legalCharges: fmt(bd.legalCharges),
+        maintenanceDeposit: fmt(bd.maintenanceDeposit),
+        otherCharges: fmt(bd.otherCharges),
+        total: fmt(bd.totalPrice)!,
+        isUC,
+        isFromBackend: true,
+      };
+    }
+
+    // Fallback: Calculate estimates
     const gst = isUC ? Math.round(base * 0.05) : 0;
     const stamp = Math.round(base * 0.055);
     const reg = Math.round(base * 0.01);
     const total = base + gst + stamp + reg;
     const fmt = (n: number) => n >= 10000000 ? `₹${(n / 10000000).toFixed(2)} Cr` : `₹${(n / 100000).toFixed(1)} L`;
-    return { base: fmt(base), gst: gst > 0 ? fmt(gst) : null, gstRate: isUC ? "5%" : "0%", stamp: fmt(stamp), reg: fmt(reg), total: fmt(total), isUC };
+    return {
+      base: fmt(base),
+      gst: gst > 0 ? fmt(gst) : null,
+      gstRate: isUC ? "5%" : "0%",
+      stamp: fmt(stamp),
+      stampRate: "~5.5%",
+      reg: fmt(reg),
+      regRate: "~1%",
+      legalCharges: null as string | null,
+      maintenanceDeposit: null as string | null,
+      otherCharges: null as string | null,
+      total: fmt(total),
+      isUC,
+      isFromBackend: false,
+    };
   };
 
   const breakdown = getPriceBreakdown();
@@ -139,10 +179,13 @@ export default function DetailPanel({
               <div className="mt-2 bg-gray-50 rounded-lg p-3 border border-gray-100 space-y-1.5">
                 <div className="flex justify-between text-xs"><span className="text-gray-500">Base Price</span><span className="font-semibold">{breakdown.base}</span></div>
                 {breakdown.gst ? <div className="flex justify-between text-xs"><span className="text-gray-500">GST ({breakdown.gstRate})</span><span className="font-semibold">{breakdown.gst}</span></div> : <div className="flex justify-between text-xs"><span className="text-gray-500">GST</span><span className="font-semibold text-green-600">Exempt ✓</span></div>}
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Stamp Duty (~5.5%)</span><span className="font-semibold">{breakdown.stamp}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-500">Registration (~1%)</span><span className="font-semibold">{breakdown.reg}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-gray-500">Stamp Duty ({breakdown.stampRate})</span><span className="font-semibold">{breakdown.stamp}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-gray-500">Registration ({breakdown.regRate})</span><span className="font-semibold">{breakdown.reg}</span></div>
+                {breakdown.legalCharges && <div className="flex justify-between text-xs"><span className="text-gray-500">Legal Charges</span><span className="font-semibold">{breakdown.legalCharges}</span></div>}
+                {breakdown.maintenanceDeposit && <div className="flex justify-between text-xs"><span className="text-gray-500">Maintenance Deposit</span><span className="font-semibold">{breakdown.maintenanceDeposit}</span></div>}
+                {breakdown.otherCharges && <div className="flex justify-between text-xs"><span className="text-gray-500">Other Charges</span><span className="font-semibold">{breakdown.otherCharges}</span></div>}
                 <div className="flex justify-between text-xs pt-1.5 border-t border-gray-200"><span className="font-bold">Total (approx)</span><span className="font-bold text-green-700">{breakdown.total}</span></div>
-                <p className="text-[9px] text-gray-400 mt-1">* Approximate charges. Consult builder for exact costs.</p>
+                <p className="text-[9px] text-gray-400 mt-1">{breakdown.isFromBackend ? "* As provided by builder." : "* Approximate charges. Consult builder for exact costs."}</p>
               </div>
             )}
           </div>

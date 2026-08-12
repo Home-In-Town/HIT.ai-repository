@@ -29,6 +29,19 @@ export interface ProjectProperty {
   pricePerSqFt?: number;
   startingPrice?: number;
   bankLoanAvailable?: boolean;
+  priceBreakdown?: {
+    basePrice?: number;
+    gst?: number;
+    gstPercentage?: number;
+    stampDuty?: number;
+    stampDutyPercentage?: number;
+    registration?: number;
+    registrationPercentage?: number;
+    legalCharges?: number;
+    maintenanceDeposit?: number;
+    otherCharges?: number;
+    totalPrice?: number;
+  };
   reraApproved?: boolean;
   reraNumber?: string;
   gatedCommunity?: boolean;
@@ -219,6 +232,19 @@ export function mapProject(
     plotSizeRange: (config?.plotSizeRange as string) || "",
     pricePerSqFt: Number(pricing?.pricePerSqFt) || 0,
     startingPrice,
+    priceBreakdown: (pricing?.priceBreakdown as Record<string, unknown> | undefined) ? {
+      basePrice: Number((pricing!.priceBreakdown as Record<string, unknown>)?.basePrice) || undefined,
+      gst: Number((pricing!.priceBreakdown as Record<string, unknown>)?.gst) || undefined,
+      gstPercentage: Number((pricing!.priceBreakdown as Record<string, unknown>)?.gstPercentage) || 5,
+      stampDuty: Number((pricing!.priceBreakdown as Record<string, unknown>)?.stampDuty) || undefined,
+      stampDutyPercentage: Number((pricing!.priceBreakdown as Record<string, unknown>)?.stampDutyPercentage) || 5.5,
+      registration: Number((pricing!.priceBreakdown as Record<string, unknown>)?.registration) || undefined,
+      registrationPercentage: Number((pricing!.priceBreakdown as Record<string, unknown>)?.registrationPercentage) || 1,
+      legalCharges: Number((pricing!.priceBreakdown as Record<string, unknown>)?.legalCharges) || undefined,
+      maintenanceDeposit: Number((pricing!.priceBreakdown as Record<string, unknown>)?.maintenanceDeposit) || undefined,
+      otherCharges: Number((pricing!.priceBreakdown as Record<string, unknown>)?.otherCharges) || undefined,
+      totalPrice: Number((pricing!.priceBreakdown as Record<string, unknown>)?.totalPrice) || undefined,
+    } : undefined,
     bankLoanAvailable: Boolean(pricing?.bankLoanAvailable),
     reraApproved: Boolean(p.reraApproved),
     reraNumber: (p.reraNumber as string) || "",
