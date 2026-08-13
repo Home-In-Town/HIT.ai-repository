@@ -106,13 +106,9 @@ export default function DetailPanel({
 
           {/* ─── Header ─── */}
           <div className="px-5 pt-4 pb-1 flex items-start justify-between">
-            {/* RERA / Status Badge */}
+            {/* Status Badge (only when not RERA verified) */}
             <div className="flex-1 min-w-0">
-              {property.reraApproved ? (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 uppercase tracking-wide mb-1">
-                  <span className="text-green-600">✅</span> RERA VERIFIED
-                </span>
-              ) : (
+              {!property.reraApproved && (
                 <span className={`inline-block text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded mb-1 ${
                   property.projectStatus === "ready-to-move" ? "bg-green-100 text-green-700" :
                   property.projectStatus === "pre-launch" ? "bg-blue-100 text-blue-700" :
