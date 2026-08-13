@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ProjectProperty } from "@/lib/mapProject";
 
 interface DetailPanelProps {
@@ -22,6 +22,18 @@ export default function DetailPanel({
   onImmersiveView,
 }: DetailPanelProps) {
   const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  // Auto-scroll carousel
+  useEffect(() => {
+    if (!property) { setActiveSlide(0); return; }
+    const allImages = [property.image, ...(property.galleryImages || [])].filter(Boolean);
+    if (allImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % allImages.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [property]);
 
   const getPriceBreakdown = () => {
     if (!property?.startingPrice) return null;
@@ -208,24 +220,45 @@ export default function DetailPanel({
             <button onClick={onImmersiveView} className="px-3 py-1.5 bg-gray-800 text-white text-xs rounded-full whitespace-nowrap">Virtual View</button>
           </div>
 
-          {/* ─── Cover Image with "ACTUAL SITE PHOTO" badge ─── */}
-          <div className="relative h-[220px] w-full">
-            <Image src={property.image} alt={property.property_name} fill className="object-cover" />
-            <span className="absolute bottom-3 left-3 bg-black/70 text-white text-[10px] font-bold uppercase px-2 py-1 rounded tracking-wide">
-              Actual Site Photo
-            </span>
-          </div>
-
-          {/* ─── Gallery Thumbnails ─── */}
-          {property.galleryImages && property.galleryImages.length > 0 && (
-            <div className="flex gap-1 overflow-x-auto px-0 mt-1">
-              {property.galleryImages.map((img, i) => (
-                <div key={`gallery-${i}`} className="relative w-[100px] h-[70px] shrink-0">
-                  <Image src={img} alt={`Gallery ${i + 1}`} fill className="object-cover" />
+          {/* ─── Auto-scrolling Image Carousel ─── */}
+          {(() => {
+            const allImages = [property.image, ...(property.galleryImages || [])].filter(Boolean);
+            return (
+              <div className="relative h-[220px] w-full overflow-hidden">
+                {/* Slides */}
+                <div
+                  className="flex h-full transition-transform duration-500 ease-in-out"
+                  style={{ transform: `translateX(-${activeSlide * 100}%)` }}
+                >
+                  {allImages.map((img, i) => (
+                    <div key={`slide-${i}`} className="relative min-w-full h-full">
+                      <Image src={img} alt={`${property.property_name} ${i + 1}`} fill className="object-cover" />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+                {/* Badge */}
+                <span className="absolute bottom-3 left-3 bg-black/70 text-white text-[10px] font-bold uppercase px-2 py-1 rounded tracking-wide">
+                  Actual Site Photo
+                </span>
+                {/* Image counter */}
+                <span className="absolute top-3 right-3 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded">
+                  {activeSlide + 1}/{allImages.length}
+                </span>
+                {/* Dots */}
+                {allImages.length > 1 && (
+                  <div className="absolute bottom-3 right-3 flex gap-1">
+                    {allImages.map((_, i) => (
+                      <button
+                        key={`dot-${i}`}
+                        onClick={() => setActiveSlide(i)}
+                        className={`w-1.5 h-1.5 rounded-full transition ${i === activeSlide ? "bg-white" : "bg-white/40"}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* ─── Call / WhatsApp / Book Visit ─── */}
           <div className="px-5 py-4 flex gap-2">
