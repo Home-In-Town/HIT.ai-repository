@@ -64,9 +64,9 @@ const MAP_STYLES: any[] = [
 
 // Helper: get URL params once (avoids repeated parsing)
 const getUrlParams = () => {
-  if (typeof window === "undefined") return { lat: null, lng: null, directions: null, only: null, view: null };
+  if (typeof window === "undefined") return { lat: null, lng: null, directions: null, only: null, view: null, property: null };
   const p = new URLSearchParams(window.location.search);
-  return { lat: p.get("lat"), lng: p.get("lng"), directions: p.get("directions"), only: p.get("only"), view: p.get("view") };
+  return { lat: p.get("lat"), lng: p.get("lng"), directions: p.get("directions"), only: p.get("only"), view: p.get("view"), property: p.get("property") };
 };
 
 function HomePageContent() {
@@ -98,11 +98,63 @@ function HomePageContent() {
   const placeMarkers = useRef<google.maps.Marker[]>([]);
 
   // ─── URL Params (read once on mount) ───
-  const [urlParams, setUrlParams] = useState<{ lat: string | null; lng: string | null; directions: string | null; only: string | null; view: string | null }>({ lat: null, lng: null, directions: null, only: null, view: null });
+  const [urlParams, setUrlParams] = useState<{ lat: string | null; lng: string | null; directions: string | null; only: string | null; view: string | null; property: string | null }>({ lat: null, lng: null, directions: null, only: null, view: null, property: null });
 
   useEffect(() => {
     setUrlParams(getUrlParams());
   }, []);
+
+  // ─── Auto-open property from ?property=slug (redirect from homeintown.in) ───
+  useEffect(() => {
+    const slug = new URLSearchParams(window.location.search).get("property");
+    if (!slug || !mapReady || !mapInstance.current) return;
+
+    const fetchAndOpen = async () => {
+      try {
+        const data = await apiRequest<Record<string, unknown>>(`public/projects/${slug}`);
+        const mapped = mapProject(data);
+        if (!mapped) return;
+
+        const map = mapInstance.current!;
+        // Clear all overlays
+        overlays.current.forEach((o) => (o as unknown as { remove: () => void }).remove());
+        overlays.current = [];
+        if (locationMarker.current) { locationMarker.current.setMap(null); locationMarker.current = null; }
+        if (locationCircle.current) { locationCircle.current.setMap(null); locationCircle.current = null; }
+
+        // Pan to property
+        map.panTo({ lat: mapped.lat, lng: mapped.lng });
+        map.setZoom(14);
+
+        // Place pin
+        if (singleMarker.current) { singleMarker.current.setMap(null); singleMarker.current = null; }
+        singleMarker.current = new window.google.maps.Marker({
+          position: { lat: mapped.lat, lng: mapped.lng },
+          map,
+          title: mapped.property_name,
+        });
+
+        // Draw circle
+        if (geoCircle.current) { geoCircle.current.setMap(null); geoCircle.current = null; }
+        geoCircle.current = new window.google.maps.Circle({
+          map,
+          center: { lat: mapped.lat, lng: mapped.lng },
+          radius: 2500,
+          fillColor: "#16a34a",
+          fillOpacity: 0.05,
+          strokeColor: "#16a34a",
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+        });
+
+        // Open DetailPanel
+        setDetailProperty(mapped);
+      } catch (err) {
+        console.error("Failed to fetch property:", err);
+      }
+    };
+    fetchAndOpen();
+  }, [mapReady]);
 
   // ─── Show only single property marker when "only=true" ───
   useEffect(() => {
@@ -200,7 +252,7 @@ function HomePageContent() {
   // ─── Fetch projects from backend ───
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("only") === "true" || params.get("directions") === "true") return;
+    if (params.get("only") === "true" || params.get("directions") === "true" || params.get("property")) return;
     const fetchProjects = async () => {
       try {
         const data = await apiRequest<Record<string, unknown>[]>("public/projects");
