@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "HomeInTown.ai",
+    "slug": "homeintown-ai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.homeintown.ai"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#15803D"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.homeintown.ai",
+      "versionCode": 1,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAzw6zVDMG0KFuWIeQtg6mlasy-hghuZM4"
+        }
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "fd2f9b02-0e52-481c-a711-f9a3e57bd17c"
+      }
+    },
+    "owner": "homeintown.in"
+  }
+}

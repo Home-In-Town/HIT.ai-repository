@@ -1,0 +1,68 @@
+name: EAS Build
+
+on:
+  push:
+    branches:
+      - main
+      - production
+    paths:
+      - 'homeintown_ai-mobile/**'
+
+jobs:
+  build-development:
+    name: Development Build (APK)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: homeintown_ai-mobile/package-lock.json
+
+      - name: Install dependencies
+        working-directory: homeintown_ai-mobile
+        run: npm ci
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build Development APK
+        working-directory: homeintown_ai-mobile
+        run: eas build --platform android --profile development --non-interactive
+
+  build-production:
+    name: Production Build (AAB - Play Store)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/production'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: homeintown_ai-mobile/package-lock.json
+
+      - name: Install dependencies
+        working-directory: homeintown_ai-mobile
+        run: npm ci
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build Production AAB
+        working-directory: homeintown_ai-mobile
+        run: eas build --platform android --profile production --non-interactive
