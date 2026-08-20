@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import { apiRequest } from "@/lib/api";
+import PropertyAgentWidget from "@/components/PropertyAgentWidget";
 
 interface ProjectData {
   id: string;
@@ -437,6 +438,8 @@ function PropertyContent() {
           </div>
         </div>
       )}
+      {/* ─── AI Property Agent Widget ─── */}
+      <PropertyAgentWidget slug={project.slug} propertyName={project.projectName} />
     </div>
   );
 }

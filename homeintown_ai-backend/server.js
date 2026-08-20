@@ -38,6 +38,8 @@ const marketplaceRoutes = require('./routes/marketplace.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const groupChatRoutes = require('./routes/groupChat.routes');
 const shareRoutes = require('./routes/share.routes');
+const propertyAgentRoutes = require('./routes/propertyAgent.routes');
+const propertyAgentRoutes = require('./routes/propertyAgent.routes');
 
 // Import services
 const { initWebhookCron } = require('./services/WebhookCron');
@@ -156,6 +158,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/group-chat', groupChatRoutes);
 app.use('/api/share', shareRoutes);
 app.use('/api/lead-matching', require('./routes/leadMatching.routes'));
+app.use('/api/property-agent', propertyAgentRoutes);
 
 // 404 handler
 app.use((req, res) => {
