@@ -1,12 +1,12 @@
 const axios = require('axios');
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = 'gemini-3.6-flash';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent`;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL = 'qwen/qwen3.6-27b';
 
 /**
  * Builds a detailed system prompt for the property AI agent
- * using the full project data so Gemini knows everything about the property.
+ * using the full project data so the LLM knows everything about the property.
  */
 function buildSystemPrompt(property) {
   const {
@@ -75,82 +75,73 @@ function buildSystemPrompt(property) {
   lines.push(
     ``,
     `=== CONTACT ===`,
-    cta.callNumber ? `Call/Enquiry Number: ${cta.callNumber}` : '',
+    cta.callNumber   ? `Call/Enquiry Number: ${cta.callNumber}` : '',
     cta.whatsappNumber ? `WhatsApp: ${cta.whatsappNumber}` : '',
     ``,
     `=== AGENT INSTRUCTIONS ===`,
     `- When visitors ask about price, give the starting price and mention they can enquire for exact unit pricing.`,
-    `- When visitors ask about availability, encourage them to call or WhatsApp for current availability.`,
+    `- When visitors ask about availability, encourage them to call or WhatsApp.`,
     `- When visitors show interest, suggest booking a site visit.`,
-    `- Keep responses short (2-4 sentences max) unless the visitor asks for details.`,
+    `- Keep responses short (2-4 sentences max) unless the visitor asks for more details.`,
     `- Do NOT discuss competitor projects.`,
     `- Do NOT invent features or amenities not listed above.`
   );
 
-  return lines.filter(l => l !== undefined).join('\n');
+  return lines.filter(Boolean).join('\n');
 }
 
-class GeminiService {
+class GroqService {
   /**
    * Send a chat message with full property context.
-   * Maintains conversation history for multi-turn chat.
+   * Groq uses OpenAI-compatible API — simple messages array.
    *
-   * @param {object} property  - Full property/project data object
+   * @param {object} property    - Full property/project data object
    * @param {string} userMessage - Latest message from the visitor
-   * @param {Array}  history   - Previous turns [{ role: 'user'|'model', parts: [{ text }] }]
+   * @param {Array}  history     - Previous turns [{ role: 'user'|'assistant', content: string }]
    * @returns {Promise<{ reply: string, history: Array }>}
    */
   async chat(property, userMessage, history = []) {
     const systemPrompt = buildSystemPrompt(property);
 
-    // Build contents array: system prompt as first user turn (workaround for REST API),
-    // then conversation history, then current message
-    const contents = [
-      // Inject system prompt as a leading user/model pair so it anchors the conversation
-      {
-        role: 'user',
-        parts: [{ text: `[SYSTEM INSTRUCTIONS]\n${systemPrompt}\n[END SYSTEM INSTRUCTIONS]\n\nAcknowledge you understand your role.` }]
-      },
-      {
-        role: 'model',
-        parts: [{ text: `Understood! I'm the AI agent for ${property.projectName || 'this property'}. I'm ready to help visitors with any questions about this property.` }]
-      },
-      // Previous conversation turns
+    const messages = [
+      { role: 'system', content: systemPrompt },
       ...history,
-      // Current user message
-      {
-        role: 'user',
-        parts: [{ text: userMessage }]
-      }
+      { role: 'user', content: userMessage },
     ];
 
     const response = await axios.post(
-      `${GEMINI_URL}?key=${GEMINI_API_KEY}`,
+      GROQ_URL,
       {
-        contents,
-        generationConfig: {
-          maxOutputTokens: 512,
-          temperature: 0.7,
-        },
+        model: GROQ_MODEL,
+        messages,
+        max_tokens: 512,
+        temperature: 0.7,
       },
       {
         timeout: 30000,
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${GROQ_API_KEY}`,
+        },
       }
     );
 
-    const reply = response.data.candidates?.[0]?.content?.parts?.[0]?.text || 
+    const rawReply = response.data.choices?.[0]?.message?.content ||
                   'Sorry, I could not generate a response. Please try again.';
 
-    // Append only the real conversation turns (not the system prompt injection)
+    // Strip <think>...</think> reasoning tags (Qwen model includes internal reasoning)
+    const reply = rawReply.replace(/<think>[\s\S]*?<\/think>/gi, '').trim() ||
+                  'Sorry, I could not generate a response. Please try again.';
+
+    // Append both turns to history for next call
     const updatedHistory = [
       ...history,
-      { role: 'user', parts: [{ text: userMessage }] },
-      { role: 'model', parts: [{ text: reply }] },
+      { role: 'user', content: userMessage },
+      { role: 'assistant', content: reply },
     ];
 
     return { reply, history: updatedHistory };
   }
 }
 
-module.exports = new GeminiService();
+module.exports = new GroqService();

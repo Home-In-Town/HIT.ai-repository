@@ -8,8 +8,8 @@ interface Message {
 }
 
 interface HistoryTurn {
-  role: "user" | "model";
-  parts: [{ text: string }];
+  role: "user" | "assistant";
+  content: string;
 }
 
 interface PropertyAgentWidgetProps {

@@ -1,16 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const Project = require('../models/Project');
-const GeminiService = require('../services/GeminiService');
+const GroqService = require('../services/GeminiService'); // GeminiService.js now uses Groq internally
 
 /**
  * POST /api/property-agent/chat
  *
  * Body:
  *   {
- *     slug: string,          // property slug to identify which property
- *     message: string,       // visitor's message
- *     history: Array         // optional - previous conversation turns
+ *     slug:    string,   // property slug to identify which property
+ *     message: string,   // visitor's message
+ *     history: Array     // optional - previous turns [{ role: 'user'|'assistant', content: string }]
  *   }
  *
  * Public endpoint — no auth required (visitors are not logged in)
@@ -42,21 +42,21 @@ router.post('/chat', async (req, res) => {
       return res.status(404).json({ error: 'Property not found' });
     }
 
-    // Sanitize history — keep only valid turns, max last 10 turns
+    // Sanitize history — Groq uses OpenAI format: { role: 'user'|'assistant', content: string }
     const sanitizedHistory = Array.isArray(history)
       ? history
           .filter(
             (h) =>
               h &&
-              (h.role === 'user' || h.role === 'model') &&
-              Array.isArray(h.parts) &&
-              h.parts[0]?.text
+              (h.role === 'user' || h.role === 'assistant') &&
+              typeof h.content === 'string' &&
+              h.content.trim().length > 0
           )
-          .slice(-10)
+          .slice(-10) // keep last 10 turns to stay within token limits
       : [];
 
-    // Call Gemini
-    const { reply, history: updatedHistory } = await GeminiService.chat(
+    // Call Groq
+    const { reply, history: updatedHistory } = await GroqService.chat(
       property,
       message.trim(),
       sanitizedHistory
@@ -64,10 +64,9 @@ router.post('/chat', async (req, res) => {
 
     res.json({ reply, history: updatedHistory });
   } catch (error) {
-    console.error('❌ Property Agent chat error:', error.message);
+    console.error('❌ Property Agent chat error:', error.response?.data || error.message);
 
-    // Gemini API key issues
-    if (error.message?.includes('API_KEY') || error.message?.includes('API key')) {
+    if (error.response?.status === 401) {
       return res.status(500).json({ error: 'AI service configuration error. Please contact support.' });
     }
 
