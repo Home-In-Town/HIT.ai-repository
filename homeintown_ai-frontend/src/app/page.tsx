@@ -8,6 +8,7 @@ import {
   mapProject,
   getIncompleteReason,
 } from "@/lib/mapProject";
+import MapAIGuideWidget from "@/components/MapAIGuideWidget";
 import SearchBar from "@/components/map/SearchBar";
 import MapButtons from "@/components/map/MapButtons";
 import DetailPanel from "@/components/map/DetailPanel";
@@ -95,6 +96,7 @@ function HomePageContent() {
   const [geoCenter, setGeoCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [activePlaceCategory, setActivePlaceCategory] = useState("");
   const [showPlaceFilter, setShowPlaceFilter] = useState(false);
+  const [showAIGuide, setShowAIGuide] = useState(false);
   const placeMarkers = useRef<google.maps.Marker[]>([]);
 
   // ─── URL Params (read once on mount) ───
@@ -714,11 +716,39 @@ function HomePageContent() {
 
       {/* AI Guide */}
       <div className="absolute bottom-14 left-4 z-10">
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-black/90 text-white rounded-full hover:bg-black transition text-sm shadow-lg">
+        <button
+          onClick={() => setShowAIGuide((v) => !v)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-black/90 text-white rounded-full hover:bg-black transition text-sm shadow-lg"
+        >
           <span>🎧</span>
-          <span>24/7 AI Guide</span>
+          <span>{showAIGuide ? "Close AI Guide" : "24/7 AI Guide"}</span>
         </button>
       </div>
+
+      {/* AI Guide Widget */}
+      <MapAIGuideWidget
+        properties={properties.map((p) => ({
+          projectName: p.property_name,
+          builderName: p.builder,
+          city: p.city,
+          location: p.location || p.property_location,
+          projectStatus: p.projectStatus || p.status,
+          propertyType: p.type,
+          slug: p.slug,
+          pricing: {
+            startingPrice: p.startingPrice,
+            pricePerSqFt: p.pricePerSqFt,
+          },
+          configuration: {
+            bhkOptions: p.bhkOptions,
+          },
+          amenities: p.amenities,
+          reraApproved: p.reraApproved,
+          cta: p.cta,
+        }))}
+        isOpen={showAIGuide}
+        onClose={() => setShowAIGuide(false)}
+      />
 
       <IncompletePanel
         show={showIncomplete}
