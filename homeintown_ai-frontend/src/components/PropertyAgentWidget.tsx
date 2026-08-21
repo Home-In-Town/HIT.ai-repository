@@ -17,7 +17,7 @@ interface PropertyAgentWidgetProps {
   propertyName?: string;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_BASE = process.env.NEXT_PUBLIC_AI_AGENT_URL || "https://property-ai-agent-624770114041.asia-south1.run.app";
 
 export default function PropertyAgentWidget({
   slug,
