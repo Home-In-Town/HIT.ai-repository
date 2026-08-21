@@ -101,12 +101,12 @@ export default function MapAIGuideWidget({
         throw new Error(data.error || "Something went wrong");
       }
 
-      setMessages((prev) => [...prev, { role: "agent", text: data.reply }]);
+      setMessages((prev) => [...prev, { role: "agent", text: data.reply.replace(/<think>[\s\S]*?<\/think>/gi, '').trim() }]);
       setHistory(data.history);
 
       // Speak the reply aloud if voice mode is active
       if (voiceText) {
-        speak(data.reply);
+        speak(data.reply.replace(/<think>[\s\S]*?<\/think>/gi, '').trim());
       }
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : "AI unavailable";

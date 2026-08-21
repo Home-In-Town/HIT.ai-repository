@@ -73,12 +73,12 @@ export default function PropertyAgentWidget({
         throw new Error(data.error || "Something went wrong");
       }
 
-      setMessages((prev) => [...prev, { role: "agent", text: data.reply }]);
+      setMessages((prev) => [...prev, { role: "agent", text: data.reply.replace(/<think>[\s\S]*?<\/think>/gi, '').trim() }]);
       setHistory(data.history);
 
       // Speak reply if triggered by voice
       if (voiceText) {
-        speak(data.reply);
+        speak(data.reply.replace(/<think>[\s\S]*?<\/think>/gi, '').trim());
       }
     } catch (err: unknown) {
       const errorMsg =
