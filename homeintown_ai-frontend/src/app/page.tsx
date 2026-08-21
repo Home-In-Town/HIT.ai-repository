@@ -9,6 +9,7 @@ import {
   getIncompleteReason,
 } from "@/lib/mapProject";
 import MapAIGuideWidget from "@/components/MapAIGuideWidget";
+import PropertyAgentWidget from "@/components/PropertyAgentWidget";
 import SearchBar from "@/components/map/SearchBar";
 import MapButtons from "@/components/map/MapButtons";
 import DetailPanel from "@/components/map/DetailPanel";
@@ -97,6 +98,7 @@ function HomePageContent() {
   const [activePlaceCategory, setActivePlaceCategory] = useState("");
   const [showPlaceFilter, setShowPlaceFilter] = useState(false);
   const [showAIGuide, setShowAIGuide] = useState(false);
+  const [aiPropertySlug, setAiPropertySlug] = useState<string | null>(null);
   const placeMarkers = useRef<google.maps.Marker[]>([]);
 
   // ─── URL Params (read once on mount) ───
@@ -844,7 +846,20 @@ function HomePageContent() {
         }}
         on3DView={handle3DView}
         onImmersiveView={handleImmersiveView}
+        onAskAI={() => {
+          if (detailProperty?.slug) {
+            setAiPropertySlug(detailProperty.slug);
+          }
+        }}
       />
+
+      {/* Property AI Agent (triggered from DetailPanel) */}
+      {aiPropertySlug && (
+        <PropertyAgentWidget
+          slug={aiPropertySlug}
+          propertyName={detailProperty?.property_name}
+        />
+      )}
 
       <StreetViewOverlay
         coords={streetViewCoords}

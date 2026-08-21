@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useVoice } from "@/hooks/useVoice";
 
 interface Message {
   role: "user" | "agent";
@@ -50,8 +51,8 @@ export default function PropertyAgentWidget({
     }
   }, [isOpen]);
 
-  const sendMessage = async () => {
-    const text = input.trim();
+  const sendMessage = async (voiceText?: string) => {
+    const text = (voiceText || input).trim();
     if (!text || loading) return;
 
     // Add user message immediately
@@ -74,6 +75,11 @@ export default function PropertyAgentWidget({
 
       setMessages((prev) => [...prev, { role: "agent", text: data.reply }]);
       setHistory(data.history);
+
+      // Speak reply if triggered by voice
+      if (voiceText) {
+        speak(data.reply);
+      }
     } catch (err: unknown) {
       const errorMsg =
         err instanceof Error ? err.message : "AI agent is temporarily unavailable.";
@@ -86,6 +92,18 @@ export default function PropertyAgentWidget({
       setLoading(false);
     }
   };
+
+  // Voice hook
+  const handleVoiceResult = useCallback((transcript: string) => {
+    setInput(transcript);
+    sendMessage(transcript);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, history]);
+
+  const { isListening, isSpeaking, isSupported, startListening, stopListening, speak, stopSpeaking } = useVoice({
+    lang: "hi-IN",
+    onResult: handleVoiceResult,
+  });
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -204,34 +222,61 @@ export default function PropertyAgentWidget({
 
           {/* Input */}
           <div className="px-3 py-3 bg-white border-t border-gray-100 flex gap-2 flex-shrink-0">
+            {/* Mic Button */}
+            {isSupported && (
+              <button
+                onClick={isListening ? stopListening : startListening}
+                disabled={loading}
+                aria-label={isListening ? "Stop listening" : "Speak"}
+                className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition ${
+                  isListening
+                    ? "bg-red-500 text-white animate-pulse"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                } disabled:opacity-40`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true">
+                  <path d="M8.25 4.5a3.75 3.75 0 117.5 0v8.25a3.75 3.75 0 11-7.5 0V4.5z" />
+                  <path d="M6 10.5a.75.75 0 01.75.75v1.5a5.25 5.25 0 1010.5 0v-1.5a.75.75 0 011.5 0v1.5a6.751 6.751 0 01-6 6.709v2.291h3a.75.75 0 010 1.5h-7.5a.75.75 0 010-1.5h3v-2.291a6.751 6.751 0 01-6-6.709v-1.5A.75.75 0 016 10.5z" />
+                </svg>
+              </button>
+            )}
+
             <input
               ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask about price, amenities..."
+              placeholder={isListening ? "Listening..." : "Ask about price, amenities..."}
               maxLength={500}
-              disabled={loading}
+              disabled={loading || isListening}
               aria-label="Type your message"
               className="flex-1 text-sm border border-gray-200 rounded-full px-4 py-2 outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600 disabled:opacity-50 bg-gray-50"
             />
-            <button
-              onClick={sendMessage}
-              disabled={loading || !input.trim()}
-              aria-label="Send message"
-              className="w-9 h-9 rounded-full bg-green-700 hover:bg-green-800 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center flex-shrink-0 transition"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-4 h-4"
-                aria-hidden="true"
+
+            {/* Stop Speaking / Send Button */}
+            {isSpeaking ? (
+              <button
+                onClick={stopSpeaking}
+                aria-label="Stop speaking"
+                className="w-9 h-9 rounded-full bg-orange-500 text-white flex items-center justify-center flex-shrink-0 animate-pulse transition"
               >
-                <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-              </svg>
-            </button>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true">
+                  <path fillRule="evenodd" d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z" clipRule="evenodd" />
+                </svg>
+              </button>
+            ) : (
+              <button
+                onClick={() => sendMessage()}
+                disabled={loading || !input.trim()}
+                aria-label="Send message"
+                className="w-9 h-9 rounded-full bg-green-700 hover:bg-green-800 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center flex-shrink-0 transition"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true">
+                  <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       )}

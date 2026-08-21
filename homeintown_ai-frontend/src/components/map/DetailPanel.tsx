@@ -11,6 +11,7 @@ interface DetailPanelProps {
   onGeographic?: () => void;
   on3DView: () => void;
   onImmersiveView: () => void;
+  onAskAI?: () => void;
 }
 
 export default function DetailPanel({
@@ -20,6 +21,7 @@ export default function DetailPanel({
   onGeographic,
   on3DView,
   onImmersiveView,
+  onAskAI,
 }: DetailPanelProps) {
   const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
@@ -272,6 +274,19 @@ export default function DetailPanel({
               {property.cta?.buttonText || "Book Visit"}
             </button>
           </div>
+
+          {/* ─── Ask AI Agent ─── */}
+          {onAskAI && (
+            <div className="px-5 pb-4">
+              <button
+                onClick={onAskAI}
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-full text-xs font-medium hover:from-purple-700 hover:to-indigo-700 transition shadow-sm"
+              >
+                <span>🤖</span>
+                <span>Ask AI About This Property</span>
+              </button>
+            </div>
+          )}
 
           {/* ─── Top Facilities ─── */}
           {property.amenities.length > 0 && (
