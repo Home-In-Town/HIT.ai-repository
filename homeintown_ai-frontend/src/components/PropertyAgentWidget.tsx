@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useVoice } from "@/hooks/useVoice";
-import VoiceAssistantOverlay from "@/components/VoiceAssistantOverlay";
 
 interface Message {
   role: "user" | "agent";
@@ -35,7 +34,6 @@ export default function PropertyAgentWidget({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<HistoryTurn[]>([]);
-  const [showVoiceOverlay, setShowVoiceOverlay] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -122,35 +120,8 @@ export default function PropertyAgentWidget({
     "Book a site visit",
   ];
 
-  // Voice overlay handler
-  const handleVoiceOverlayMessage = async (text: string): Promise<string> => {
-    setMessages((prev) => [...prev, { role: "user", text }]);
-
-    const res = await fetch(`${API_BASE}/api/property-agent/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ slug, message: text, history }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-
-    const cleanReply = (data.reply || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
-    setMessages((prev) => [...prev, { role: "agent", text: cleanReply }]);
-    setHistory(data.history);
-    return cleanReply;
-  };
-
   return (
     <>
-      {/* Voice Overlay */}
-      {showVoiceOverlay && (
-        <VoiceAssistantOverlay
-          isOpen={showVoiceOverlay}
-          onClose={() => setShowVoiceOverlay(false)}
-          onSendMessage={handleVoiceOverlayMessage}
-        />
-      )}
-
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen((v) => !v)}
@@ -251,13 +222,19 @@ export default function PropertyAgentWidget({
 
           {/* Input */}
           <div className="px-3 py-3 bg-white border-t border-gray-100 flex gap-2 flex-shrink-0">
-            {/* Mic Button — opens fullscreen voice mode */}
+            {/* Mic Button — inline voice in popup */}
             {isSupported && (
               <button
-                onClick={() => setShowVoiceOverlay(true)}
+                onClick={isListening ? stopListening : startListening}
                 disabled={loading}
-                aria-label="Voice mode"
-                className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-40"
+                aria-label={isListening ? "Stop listening" : "Speak"}
+                className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition ${
+                  isListening
+                    ? "bg-red-500 text-white animate-pulse"
+                    : isSpeaking
+                    ? "bg-green-500 text-white animate-pulse"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                } disabled:opacity-40`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true">
                   <path d="M8.25 4.5a3.75 3.75 0 117.5 0v8.25a3.75 3.75 0 11-7.5 0V4.5z" />
