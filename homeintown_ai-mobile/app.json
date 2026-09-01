@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "HomeInTown.ai",
-    "slug": "homeintown-ai",
+    "slug": "homeintownin",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,16 +14,16 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.homeintown.ai"
+      "bundleIdentifier": "in.homeintown.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#15803D"
       },
-      "edgeToEdgeEnabled": true,
-      "package": "com.homeintown.ai",
-      "versionCode": 1,
+      "edgeToEdgeEnabled": false,
+      "package": "in.homeintown.app",
+      "versionCode": 2,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
@@ -39,9 +39,12 @@
     },
     "extra": {
       "eas": {
-        "projectId": "fd2f9b02-0e52-481c-a711-f9a3e57bd17c"
+        "projectId": "62187f91-b5a2-4e06-808d-bf1052b97415"
       }
     },
-    "owner": "homeintown.in"
+    "owner": "homeintown.in",
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

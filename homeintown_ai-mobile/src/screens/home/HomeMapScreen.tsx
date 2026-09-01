@@ -20,7 +20,6 @@ import * as Location from 'expo-location';
 import { Colors, Typography, Spacing, BorderRadius, Shadows, CATEGORY_TABS } from '../../constants';
 import { projectService } from '../../services';
 import { ProjectProperty } from '../../types';
-import MarkerGenerator from '../../components/map/MarkerGenerator';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH * 0.72;
@@ -201,7 +200,6 @@ export default function HomeMapScreen({ navigation }: any) {
   const [showDirectionsPanel, setShowDirectionsPanel] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const cardListRef = useRef<FlatList>(null);
-  const [markerImages, setMarkerImages] = useState<Record<string, string>>({});
   const [incompleteCount, setIncompleteCount] = useState(0);
   const [incompleteProperties, setIncompleteProperties] = useState<{ name: string; reason: string }[]>([]);
   const [showIncompletePanel, setShowIncompletePanel] = useState(false);
@@ -406,10 +404,24 @@ export default function HomeMapScreen({ navigation }: any) {
               setSelectedIndex(index);
               cardListRef.current?.scrollToIndex({ index, animated: true });
             }}
-            pinColor={selectedIndex === index ? '#1877F2' : '#15803D'}
-            title={property.property_name}
-            description={property.price_short}
-          />
+            tracksViewChanges={true}
+          >
+            <View style={[
+              styles.mapMarker,
+              selectedIndex === index && styles.mapMarkerActive,
+            ]}>
+              <View style={[
+                styles.mapMarkerDot,
+                selectedIndex === index && styles.mapMarkerDotActive,
+              ]} />
+              <Text style={[
+                styles.mapMarkerPrice,
+                selectedIndex === index && styles.mapMarkerPriceActive,
+              ]}>
+                {property.price_short}
+              </Text>
+            </View>
+          </Marker>
         ))}
       </MapView>
 
@@ -574,12 +586,6 @@ export default function HomeMapScreen({ navigation }: any) {
       )}
 
       {/* Directions Panel (Bottom Sheet) */}
-      {/* Marker Image Generator (offscreen) */}
-      <MarkerGenerator
-        markers={filteredProperties.map((p) => ({ id: p.id, price: p.price_short }))}
-        onImagesReady={(images) => setMarkerImages(images)}
-      />
-
       <Modal
         visible={showDirectionsPanel}
         animationType="slide"
