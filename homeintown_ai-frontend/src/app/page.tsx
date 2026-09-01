@@ -254,9 +254,11 @@ function HomePageContent() {
   }, [urlParams, mapReady]);
 
   // ─── Fetch projects from backend ───
+  // Note: we still fetch all projects when arriving via ?property=slug so that
+  // closing the popup restores every property marker (not just the single pin).
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("only") === "true" || params.get("directions") === "true" || params.get("property")) return;
+    if (params.get("only") === "true" || params.get("directions") === "true") return;
     const fetchProjects = async () => {
       try {
         const data = await apiRequest<Record<string, unknown>[]>("public/projects");
@@ -291,6 +293,9 @@ function HomePageContent() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("only") === "true" || params.get("directions") === "true") return;
+    // When arriving via ?property=slug, the auto-open effect handles the view.
+    // Skip the default "place all + pan" so the single-property view isn't broken.
+    if (params.get("property")) return;
     if (mapReady && mapInstance.current && properties.length > 0) {
       placePropertyMarkers(mapInstance.current, activeCategory, properties);
       const first = properties[0];
