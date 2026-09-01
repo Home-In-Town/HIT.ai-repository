@@ -2,114 +2,145 @@
 
 import { useState, useRef, useCallback } from "react";
 
+const AI_AGENT_URL = process.env.NEXT_PUBLIC_AI_AGENT_URL || "https://property-ai-agent-624770114041.asia-south1.run.app";
+
 interface UseVoiceOptions {
-  lang?: string;
-  onResult?: (transcript: string) => void;
+  onTranscript?: (text: string) => void;
 }
 
 /**
- * Hook for Speech-to-Text (mic) and Text-to-Speech (speak aloud).
- * Uses the browser's built-in Web Speech API — no external dependencies.
+ * Voice hook using Sarvam AI for STT and TTS.
+ * Records audio from browser mic → sends to backend → Sarvam STT → transcript.
+ * Also provides speak() that calls Sarvam TTS → plays audio.
  */
-export function useVoice({ lang = "hi-IN", onResult }: UseVoiceOptions = {}) {
-  const [isListening, setIsListening] = useState(false);
+export function useVoice({ onTranscript }: UseVoiceOptions = {}) {
+  const [isRecording, setIsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const recognitionRef = useRef<unknown>(null);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Check browser support
-  const isSupported = typeof window !== "undefined" && (
-    "SpeechRecognition" in window || "webkitSpeechRecognition" in window
-  );
+  const isSupported = typeof window !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
 
   /**
-   * Start listening — converts user speech to text
+   * Start recording from microphone
    */
-  const startListening = useCallback(() => {
+  const startRecording = useCallback(async () => {
     if (!isSupported) return;
 
-    // Stop any ongoing speech first
-    window.speechSynthesis?.cancel();
-    setIsSpeaking(false);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
 
-    const w = window as unknown as Record<string, unknown>;
-    const SpeechRecognitionCtor = w.SpeechRecognition || w.webkitSpeechRecognition;
-    if (!SpeechRecognitionCtor) return;
+      audioChunksRef.current = [];
 
-    const recognition = new (SpeechRecognitionCtor as new () => Record<string, unknown>)();
-    recognition.lang = lang;
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.continuous = false;
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
 
-    recognition.onstart = () => setIsListening(true);
+      mediaRecorder.onstop = async () => {
+        // Stop all tracks
+        stream.getTracks().forEach(t => t.stop());
 
-    recognition.onresult = (event: unknown) => {
-      const e = event as { results: { 0: { 0: { transcript: string } } } };
-      const transcript = e.results[0][0].transcript;
-      if (transcript && onResult) {
-        onResult(transcript);
-      }
-    };
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
 
-    recognition.onerror = () => setIsListening(false);
-    recognition.onend = () => setIsListening(false);
+        if (audioBlob.size < 100) return; // too short
 
-    recognitionRef.current = recognition;
-    (recognition as { start: () => void }).start();
-  }, [isSupported, lang, onResult]);
+        // Send to backend for STT
+        setIsProcessing(true);
+        try {
+          const formData = new FormData();
+          formData.append("audio", audioBlob, "recording.webm");
+
+          const res = await fetch(`${AI_AGENT_URL}/api/property-agent/voice-stt`, {
+            method: "POST",
+            body: formData,
+          });
+
+          const data = await res.json();
+
+          if (res.ok && data.transcript) {
+            onTranscript?.(data.transcript);
+          }
+        } catch (err) {
+          console.error("STT failed:", err);
+        } finally {
+          setIsProcessing(false);
+        }
+      };
+
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Mic access denied:", err);
+    }
+  }, [isSupported, onTranscript]);
 
   /**
-   * Stop listening
+   * Stop recording
    */
-  const stopListening = useCallback(() => {
-    if (recognitionRef.current) {
-      (recognitionRef.current as { stop: () => void }).stop();
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      mediaRecorderRef.current.stop();
     }
-    setIsListening(false);
+    setIsRecording(false);
   }, []);
 
   /**
-   * Speak text aloud — Text-to-Speech
+   * Speak text using Sarvam TTS — plays audio in browser
    */
-  const speak = useCallback((text: string) => {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
+  const speak = useCallback(async (text: string) => {
+    if (!text) return;
 
-    window.speechSynthesis.cancel();
+    setIsSpeaking(true);
+    try {
+      const res = await fetch(`${AI_AGENT_URL}/api/property-agent/voice-tts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, language: "hi-IN", speaker: "anushka" }),
+      });
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang;
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
+      const data = await res.json();
 
-    const voices = window.speechSynthesis.getVoices();
-    const hindiVoice = voices.find(v => v.lang.startsWith("hi")) ||
-                       voices.find(v => v.lang.startsWith("en-IN")) ||
-                       voices.find(v => v.lang.startsWith("en"));
-    if (hindiVoice) utterance.voice = hindiVoice;
-
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    utteranceRef.current = utterance;
-    window.speechSynthesis.speak(utterance);
-  }, [lang]);
+      if (res.ok && data.audio) {
+        // Play base64 audio
+        const audio = new Audio(`data:audio/wav;base64,${data.audio}`);
+        audioRef.current = audio;
+        audio.onended = () => setIsSpeaking(false);
+        audio.onerror = () => setIsSpeaking(false);
+        await audio.play();
+      } else {
+        setIsSpeaking(false);
+      }
+    } catch (err) {
+      console.error("TTS failed:", err);
+      setIsSpeaking(false);
+    }
+  }, []);
 
   /**
    * Stop speaking
    */
   const stopSpeaking = useCallback(() => {
-    window.speechSynthesis?.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
     setIsSpeaking(false);
   }, []);
 
   return {
-    isListening,
+    isRecording,
+    isProcessing,
     isSpeaking,
     isSupported,
-    startListening,
-    stopListening,
+    startRecording,
+    stopRecording,
     speak,
     stopSpeaking,
   };

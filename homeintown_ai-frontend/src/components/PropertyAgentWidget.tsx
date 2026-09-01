@@ -93,16 +93,15 @@ export default function PropertyAgentWidget({
     }
   };
 
-  // Voice hook
-  const handleVoiceResult = useCallback((transcript: string) => {
+  // Voice hook (Sarvam AI)
+  const handleTranscript = useCallback((transcript: string) => {
     setInput(transcript);
     sendMessage(transcript);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, history]);
 
-  const { isListening, isSpeaking, isSupported, startListening, stopListening, speak, stopSpeaking } = useVoice({
-    lang: "hi-IN",
-    onResult: handleVoiceResult,
+  const { isRecording, isProcessing, isSpeaking, isSupported, startRecording, stopRecording, speak, stopSpeaking } = useVoice({
+    onTranscript: handleTranscript,
   });
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -222,24 +221,28 @@ export default function PropertyAgentWidget({
 
           {/* Input */}
           <div className="px-3 py-3 bg-white border-t border-gray-100 flex gap-2 flex-shrink-0">
-            {/* Mic Button — inline voice in popup */}
+            {/* Mic Button — Sarvam voice */}
             {isSupported && (
               <button
-                onClick={isListening ? stopListening : startListening}
-                disabled={loading}
-                aria-label={isListening ? "Stop listening" : "Speak"}
-                className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition ${
-                  isListening
-                    ? "bg-red-500 text-white animate-pulse"
+                onClick={isRecording ? stopRecording : isSpeaking ? stopSpeaking : startRecording}
+                disabled={loading || isProcessing}
+                aria-label={isRecording ? "Stop recording" : isSpeaking ? "Stop speaking" : "Record voice"}
+                className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
+                  isRecording
+                    ? "bg-red-500 text-white shadow-lg shadow-red-200 scale-110"
                     : isSpeaking
-                    ? "bg-green-500 text-white animate-pulse"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    ? "bg-green-500 text-white shadow-lg shadow-green-200 scale-105"
+                    : "bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-600"
                 } disabled:opacity-40`}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true">
-                  <path d="M8.25 4.5a3.75 3.75 0 117.5 0v8.25a3.75 3.75 0 11-7.5 0V4.5z" />
-                  <path d="M6 10.5a.75.75 0 01.75.75v1.5a5.25 5.25 0 1010.5 0v-1.5a.75.75 0 011.5 0v1.5a6.751 6.751 0 01-6 6.709v2.291h3a.75.75 0 010 1.5h-7.5a.75.75 0 010-1.5h3v-2.291a6.751 6.751 0 01-6-6.709v-1.5A.75.75 0 016 10.5z" />
-                </svg>
+                {isRecording ? (
+                  <div className="w-3 h-3 bg-white rounded-sm" />
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true">
+                    <path d="M8.25 4.5a3.75 3.75 0 117.5 0v8.25a3.75 3.75 0 11-7.5 0V4.5z" />
+                    <path d="M6 10.5a.75.75 0 01.75.75v1.5a5.25 5.25 0 1010.5 0v-1.5a.75.75 0 011.5 0v1.5a6.751 6.751 0 01-6 6.709v2.291h3a.75.75 0 010 1.5h-7.5a.75.75 0 010-1.5h3v-2.291a6.751 6.751 0 01-6-6.709v-1.5A.75.75 0 016 10.5z" />
+                  </svg>
+                )}
               </button>
             )}
 
@@ -249,9 +252,9 @@ export default function PropertyAgentWidget({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={isListening ? "Listening..." : "Ask about price, amenities..."}
+              placeholder={isRecording ? "🎤 Bol rahe ho..." : isProcessing ? "Samajh raha hun..." : "Ask about price, amenities..."}
               maxLength={500}
-              disabled={loading || isListening}
+              disabled={loading || isRecording || isProcessing}
               aria-label="Type your message"
               className="flex-1 text-sm border border-gray-200 rounded-full px-4 py-2 outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600 disabled:opacity-50 bg-gray-50"
             />

@@ -23,7 +23,7 @@
       },
       "edgeToEdgeEnabled": false,
       "package": "in.homeintown.app",
-      "versionCode": 2,
+      "versionCode": 6,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"

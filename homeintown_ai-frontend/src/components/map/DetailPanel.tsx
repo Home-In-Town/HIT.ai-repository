@@ -12,6 +12,7 @@ interface DetailPanelProps {
   on3DView: () => void;
   onImmersiveView: () => void;
   onAskAI?: () => void;
+  onViewDetails?: () => void;
 }
 
 export default function DetailPanel({
@@ -22,6 +23,7 @@ export default function DetailPanel({
   on3DView,
   onImmersiveView,
   onAskAI,
+  onViewDetails,
 }: DetailPanelProps) {
   const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
@@ -274,6 +276,19 @@ export default function DetailPanel({
               {property.cta?.buttonText || "Book Visit"}
             </button>
           </div>
+
+          {/* ─── View Full Details ─── */}
+          {onViewDetails && (
+            <div className="px-5 pb-3">
+              <button
+                onClick={onViewDetails}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-full text-sm font-semibold hover:from-green-700 hover:to-emerald-700 transition shadow-md"
+              >
+                <span>📋</span>
+                <span>View Full Details</span>
+              </button>
+            </div>
+          )}
 
           {/* ─── Ask AI Agent ─── */}
           {onAskAI && (

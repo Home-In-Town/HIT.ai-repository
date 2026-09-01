@@ -403,6 +403,7 @@ export default function HomeMapScreen({ navigation }: any) {
             onPress={() => {
               setSelectedIndex(index);
               cardListRef.current?.scrollToIndex({ index, animated: true });
+              navigation.navigate('PropertyDetail', { property });
             }}
             tracksViewChanges={true}
           >

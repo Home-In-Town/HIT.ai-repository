@@ -554,6 +554,41 @@ function HomePageContent() {
     );
   };
 
+  // ─── Sync detail popup with URL + browser back button ───
+  // When a property popup opens, push ?property=slug into history so the
+  // browser back button re-shows the map (and forward re-opens the popup).
+  useEffect(() => {
+    if (detailProperty?.slug) {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("property") !== detailProperty.slug) {
+        url.searchParams.set("property", detailProperty.slug);
+        window.history.pushState({ property: detailProperty.slug }, "", url.toString());
+      }
+    }
+  }, [detailProperty]);
+
+  // Listen for browser back/forward and re-open or close the popup accordingly
+  useEffect(() => {
+    const handlePopState = async () => {
+      const slug = new URLSearchParams(window.location.search).get("property");
+      if (!slug) {
+        // Back pressed with no property in URL → close popup, keep map
+        setDetailProperty(null);
+        return;
+      }
+      // Forward/back to a property URL → re-fetch and open
+      try {
+        const data = await apiRequest<Record<string, unknown>>(`public/projects/${slug}`);
+        const mapped = mapProject(data);
+        if (mapped) setDetailProperty(mapped);
+      } catch (err) {
+        console.error("Failed to restore property:", err);
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
   // ─── Detail panel actions ───
   const handleDetailDirections = () => {
     if (detailProperty) { handleNavigate(detailProperty); setDetailProperty(null); }
@@ -797,6 +832,12 @@ function HomePageContent() {
         property={detailProperty}
         onClose={() => {
           setDetailProperty(null);
+          // Remove ?property= from URL so the map is the clean state
+          const url = new URL(window.location.href);
+          if (url.searchParams.has("property")) {
+            url.searchParams.delete("property");
+            window.history.replaceState({}, "", url.toString());
+          }
           // Remove single marker pin
           if (singleMarker.current) { singleMarker.current.setMap(null); singleMarker.current = null; }
           // Remove geographic circle
@@ -849,6 +890,11 @@ function HomePageContent() {
         onAskAI={() => {
           if (detailProperty?.slug) {
             setAiPropertySlug(detailProperty.slug);
+          }
+        }}
+        onViewDetails={() => {
+          if (detailProperty?.slug) {
+            window.location.href = `/view-property-details?slug=${detailProperty.slug}`;
           }
         }}
       />
